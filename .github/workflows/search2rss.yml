@@ -1,0 +1,53 @@
+
+name: youtube-search results-to-rss-url
+
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+    inputs:
+      URL:
+        description: 'YouTube search URL like "https://www.youtube.com/results?search_query=hammersmith+infant+neurological+examination+or+hnne"'
+        type: enviroment
+        required: False
+      Keywords:
+        description: 'YouTube seach Keywords list,hine,hnne'
+        type: enviroment
+        required: False
+      DEBUG:
+        description: 'YouTube seach Keywords list,hine,hnne'
+        type: choice
+        required: true
+        options:
+          - True
+          - False
+jobs:
+  build-ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+    - name: Download ffmpeg for Linux
+
+      run:  |
+          sudo apt update
+          sudo apt install ffmpeg
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update      
+        python -m pip install --upgrade pip
+        pip install -r dev.txt
+    - name: run demo
+      run: |
+        python youtuberss.py
+      env:
+        URL: ${{ github.event.inputs.URL }}        
+        Keywords: ${{ github.event.inputs.Keywords }}        
+        DEBUG: ${{ github.event.inputs.DEBUG }}        
+
+    - uses: stefanzweifel/git-auto-commit-action@v4
+      with:
+        commit_message: Apply php-cs-fixer changes

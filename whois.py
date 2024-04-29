@@ -7,6 +7,7 @@ import asyncio
 import requests
 import whodap
 import json
+filename = os.getenv("URL")
 
 headers_list = [
     {
@@ -203,15 +204,23 @@ def get_domain_date_whodap(value):
                 else:
                     print("Max retries reached. Exiting without a successful response.")
                     return None
+folder_path = "./result"
+
+if not os.path.exists(folder_path):
+    os.mkdir(folder_path)
+output_folder = "./output"
+if not os.path.exists("output"):
+    os.mkdir("output")
+
 
 
 # Read the CSV file into a DataFrame
 df = pd.read_csv(
-    "domainlist.csv", encoding="utf-8"
+    filename+".csv", encoding="utf-8"
 )  # Replace 'data.csv' with your CSV file name
 
 # Connect to an SQLite database
-conn = sqlite3.connect("output.db")
+conn = sqlite3.connect("output/output.db")
 
 # Create a table to store the results if it doesn't exist
 with closing(conn.cursor()) as cursor:
@@ -309,5 +318,70 @@ for index, row in df.iterrows():
 # Close the database connection
 conn.close()
 
+
+def zip_folder(folder_path, output_folder, max_size_mb, zip_file,zip_temp_file,zip_count):
+    # Create the output folder if it doesn't exist
+    os.makedirs(output_folder, exist_ok=True)
+
+    # Convert the maximum size from MB to bytes
+    max_size_bytes = max_size_mb * 1024 * 1024
+
+    # Iterate over the directory tree
+    for root, dirs, files in os.walk(folder_path):
+        for file in files:
+            file_path = os.path.join(root, file)
+
+            # Add each file to the current ZIP archive
+            zip_file.write(file_path)
+
+            # Check if the current ZIP file exceeds the maximum size
+            if os.stat(file_path).st_size > max_size_bytes:
+                # Close the current ZIP archive
+                zip_file.close()
+
+                # Move the current ZIP file to the output folder
+                shutil.move(
+                    zip_temp_file,
+                    os.path.join(output_folder, f"archive{zip_count}.zip"),
+                )
+
+                print(
+                    f"Created 'archive{zip_count}.zip' (size: {os.path.getsize(os.path.join(output_folder, f'archive{zip_count}.zip'))} bytes)"
+                )
+
+                # Create a new ZIP archive for the remaining files
+                zip_count += 1
+                zip_temp_file = os.path.join(output_folder, f"temp{zip_count}.zip")
+                zip_file = zipfile.ZipFile(zip_temp_file, "w", zipfile.ZIP_DEFLATED)
+
+                # Delete the original file after adding it to the ZIP archive
+                os.remove(file_path)
+
+    # Close the last ZIP archive
+    zip_file.close()
+
+    # Move the last ZIP file to the output folder
+    shutil.move(zip_temp_file, os.path.join(output_folder, f"archive{zip_count}.zip"))
+
+    print(
+        f"Created 'archive{zip_count}.zip' (size: {os.path.getsize(os.path.join(output_folder, f'archive{zip_count}.zip'))} bytes)"
+    )
+
+
+
+# Specify the folder path you want to compress
+
+# Specify the maximum size of each RAR file in MB
+max_size_mb = 1500
+
+# Create a temporary ZIP file for the first archive
+zip_count = 1
+zip_temp_file = os.path.join(output_folder, f"temp{zip_count}.zip")
+zip_file = zipfile.ZipFile(zip_temp_file, "w", zipfile.ZIP_DEFLATED)
+
+# Compress the folder into multiple ZIP archives
+zip_folder(folder_path, output_folder, max_size_mb, zip_file,zip_temp_file,zip_count)
+else:
+    print("please input a valid url", URL)
 
 #

@@ -3,10 +3,13 @@ import pandas as pd
 import sqlite3
 from contextlib import closing
 import time, random
-import asyncio
 import requests
 import whodap
 import json
+import os
+import shutil
+import zipfile
+
 filename = os.getenv("URL")
 
 headers_list = [
@@ -204,6 +207,8 @@ def get_domain_date_whodap(value):
                 else:
                     print("Max retries reached. Exiting without a successful response.")
                     return None
+
+
 folder_path = "./result"
 
 if not os.path.exists(folder_path):
@@ -213,10 +218,9 @@ if not os.path.exists("output"):
     os.mkdir("output")
 
 
-
 # Read the CSV file into a DataFrame
 df = pd.read_csv(
-    filename+".csv", encoding="utf-8"
+    filename + ".csv", encoding="utf-8"
 )  # Replace 'data.csv' with your CSV file name
 
 # Connect to an SQLite database
@@ -319,7 +323,9 @@ for index, row in df.iterrows():
 conn.close()
 
 
-def zip_folder(folder_path, output_folder, max_size_mb, zip_file,zip_temp_file,zip_count):
+def zip_folder(
+    folder_path, output_folder, max_size_mb, zip_file, zip_temp_file, zip_count
+):
     # Create the output folder if it doesn't exist
     os.makedirs(output_folder, exist_ok=True)
 
@@ -368,6 +374,21 @@ def zip_folder(folder_path, output_folder, max_size_mb, zip_file,zip_temp_file,z
     )
 
 
+# Path to your output CSV file
+output_csv = "output/output.csv"
+
+# Connect to the SQLite database
+conn = sqlite3.connect("output/output.db")
+
+# Read the data from the 'destinations' table into a pandas DataFrame
+df = pd.read_sql_query("SELECT * FROM destinations", conn)
+
+# Close the database connection
+conn.close()
+
+# Write the DataFrame to a CSV file
+df.to_csv(output_csv, index=False, encoding="utf-8")
+
 
 # Specify the folder path you want to compress
 
@@ -380,8 +401,7 @@ zip_temp_file = os.path.join(output_folder, f"temp{zip_count}.zip")
 zip_file = zipfile.ZipFile(zip_temp_file, "w", zipfile.ZIP_DEFLATED)
 
 # Compress the folder into multiple ZIP archives
-zip_folder(folder_path, output_folder, max_size_mb, zip_file,zip_temp_file,zip_count)
-else:
-    print("please input a valid url", URL)
+zip_folder(folder_path, output_folder, max_size_mb, zip_file, zip_temp_file, zip_count)
+
 
 #

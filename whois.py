@@ -9,6 +9,7 @@ import json
 import os
 import shutil
 import zipfile
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 filename = os.getenv("URL")
 
@@ -218,111 +219,6 @@ if not os.path.exists("output"):
     os.mkdir("output")
 
 
-# Read the CSV file into a DataFrame
-df = pd.read_csv(
-    filename + ".csv", encoding="utf-8"
-)  # Replace 'data.csv' with your CSV file name
-
-# Connect to an SQLite database
-conn = sqlite3.connect("output/output.db")
-
-# Create a table to store the results if it doesn't exist
-with closing(conn.cursor()) as cursor:
-    cursor.execute(
-        """
-    CREATE TABLE IF NOT EXISTS destinations (
-        destination TEXT,
-        category TEXT,
-        traffic_share TEXT,
-        visits TEXT,
-        changes TEXT,
-        channel TEXT,
-        type TEXT,
-        rdap TEXT,
-        whodap TEXT,
-        whois TEXT
-
-    )
-    """
-    )
-    conn.commit()
-
-# Process each row in the DataFrame and save the results to the database
-for index, row in df.iterrows():
-    domain = row["目标"]  # Replace '目标' with the actual column name if different
-    rdapresult = None
-    whodapresult = None
-
-    if "rdap" in row and row["rdap"] is not None:
-        pass
-
-    else:
-        print(domain)
-        # time.sleep(10)
-        rdapresult = get_domain_date_rdap(domain)
-        print("==========rdap====================", rdapresult)
-
-    if "whodap" in row and row["whodap"] is not None:
-        pass
-
-    else:
-        whodapresult = get_domain_date_whodap(domain)
-        print("-------------whodap-----------------", whodapresult)
-
-    if "whois" in row and row["whois"] is not None:
-        pass
-
-    else:
-        # time.sleep(10)
-        whoisresult = get_domain_date_whois(domain)
-        print("~~~~~~~~~~~whois~~~~~~~~~~~~~~~~~~", whoisresult)
-
-        # try:
-        #     result = get_domain_date_whodap(domain)
-        #     print(result)
-        # except Exception:
-        #     result = ""
-
-        # Prepare the data to be inserted
-        data = {
-            "destination": domain,
-            "category": row["类别"],
-            "traffic_share": row["流量比例"],
-            "visits": row["访问量"],
-            "changes": row["更改"],
-            "channel": row["渠道"],
-            "type": row["type"],
-            "rdap": rdapresult,
-            "whois": whoisresult,
-            "whodap": whodapresult,
-        }
-
-        # Insert the data into the SQLite database
-        with closing(conn.cursor()) as cursor:
-            cursor.execute(
-                """
-                INSERT INTO destinations (destination, category, traffic_share, visits, changes, channel, type, rdap,whois,whodap)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?,?,?)
-                """,
-                (
-                    data["destination"],
-                    data["category"],
-                    data["traffic_share"],
-                    data["visits"],
-                    data["changes"],
-                    data["channel"],
-                    data["type"],
-                    data["rdap"],
-                    data["whois"],
-                    data["whodap"],
-                ),
-            )
-            conn.commit()
-
-# Close the database connection
-conn.close()
-
-
 def zip_folder(
     folder_path, output_folder, max_size_mb, zip_file, zip_temp_file, zip_count
 ):
@@ -374,20 +270,128 @@ def zip_folder(
     )
 
 
-# Path to your output CSV file
-output_csv = "output/output.csv"
+# This function will be executed concurrently for each row.
+def process_row(row, conn, index):
+    data = row
+    data["id"] = index
+    domain = row["destination"]
+    if "status" not in row or (row["status"] and row["status"] == "0"):
+        # Check and perform RDAP, Whois, and WhoDAP lookups if necessary
+        if "rdap" not in row or row["rdap"] is None:
+            data["rdap"] = get_domain_date_rdap(domain)
+        else:
+            data["rdap"] = row["rdap"]
 
-# Connect to the SQLite database
-conn = sqlite3.connect("output/output.db")
+        if "whois" not in row or row["whois"] is None:
+            data["whois"] = get_domain_date_whois(domain)
+        else:
+            data["whois"] = row["whois"]
 
-# Read the data from the 'destinations' table into a pandas DataFrame
-df = pd.read_sql_query("SELECT * FROM destinations", conn)
+        if "whodap" not in row or row["whodap"] is None:
+            data["whodap"] = get_domain_date_whodap(domain)
+        else:
+            data["whodap"] = row["whodap"]
+        data["status"] = "1"
+        # Insert the data into the SQLite database
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO destinations (id,destination, category, traffic_share, visits, changes, channel, type, rdap, whois, whodap,status)
+                VALUES (?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
+                """,
+                (
+                    data["id"],
+                    data["destination"],
+                    data["category"],
+                    data["traffic_share"],
+                    data["visits"],
+                    data["changes"],
+                    data["channel"],
+                    data["type"],
+                    data["rdap"],
+                    data["whois"],
+                    data["whodap"],
+                    data["status"],
+                ),
+            )
+        conn.commit()
+        return domain  # Optionally return something if needed
 
+
+# Note: Be cautious with the number of workers you use, especially with IO-bound tasks like network requests.
+# Too many workers can lead to issues such as running out of file descriptors or overwhelming the server with requests.
+def startDB():
+    df = pd.DataFrame()
+    conn = None
+    if os.path.exists("output.db"):
+        # Connect to the SQLite database
+        conn = sqlite3.connect("output.db")
+
+        # Read the data from the 'destinations' table into a pandas DataFrame
+        df = pd.read_sql_query("SELECT * FROM destinations", conn)
+    else:
+        # Read the CSV file into a DataFrame
+        df = pd.read_csv(
+            "stripe/stripe-final_combined.csv", encoding="utf-8"
+        )  # Replace 'data.csv' with your CSV file name
+
+        # Connect to an SQLite database
+        conn = sqlite3.connect("output.db")
+        # Create a table to store the results if it doesn't exist
+        with closing(conn.cursor()) as cursor:
+            cursor.execute(
+                """
+            CREATE TABLE IF NOT EXISTS destinations (
+                id INTEGER PRIMARY KEY,
+                destination TEXT,
+                category TEXT,
+                traffic_share TEXT,
+                visits TEXT,
+                changes TEXT,
+                channel TEXT,
+                type TEXT,
+                rdap TEXT,
+                whodap TEXT,
+                whois TEXT,
+                status TEXT
+
+            )
+            """
+            )
+            conn.commit()
+
+        conn = sqlite3.connect("output.db")
+
+        # Read the data from the 'destinations' table into a pandas DataFrame
+        # df = pd.read_sql_query("SELECT * FROM destinations", conn)
+    return df, conn
+
+
+df, conn = startDB()
+# Use ThreadPoolExecutor or ProcessPoolExecutor for concurrency
+# Note: ThreadPoolExecutor is generally used for IO-bound tasks, while ProcessPoolExecutor is for CPU-bound tasks.
+with ThreadPoolExecutor(
+    max_workers=10
+) as executor:  # You can adjust the number of workers
+    future_to_domain = {
+        executor.submit(process_row, row, conn, index): row["destination"]
+        for index, row in df.iterrows()
+    }
+
+    for future in as_completed(future_to_domain):
+        domain = future_to_domain[future]
+        try:
+            # Get the result of the execution, if you have returned something from process_row
+            result = future.result()
+        except Exception as exc:
+            print(f"Generated an exception: {exc} for domain {domain}")
+        else:
+            # Process the result if needed
+            print(f"Successfully processed: {domain}")
 # Close the database connection
 conn.close()
 
 # Write the DataFrame to a CSV file
-df.to_csv(output_csv, index=False, encoding="utf-8")
 
 
 # Specify the folder path you want to compress

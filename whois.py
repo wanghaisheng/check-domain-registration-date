@@ -271,7 +271,7 @@ def zip_folder(
 
 
 # This function will be executed concurrently for each row.
-def process_row(row, index, conn):
+def process_row(row, index, db_path):
 
     data = row
     data["id"] = index
@@ -293,29 +293,31 @@ def process_row(row, index, conn):
         else:
             data["whodap"] = row["whodap"]
         data["status"] = "1"
-        # Insert the data into the SQLite database
-        with conn.cursor() as cursor:
-            cursor.execute(
-                """
-                    INSERT INTO destinations (id,destination, category, traffic_share, visits, changes, channel, type, rdap, whois, whodap,status)
-                    VALUES (?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
-                    """,
-                (
-                    data["id"],
-                    data["destination"],
-                    data["category"],
-                    data["traffic_share"],
-                    data["visits"],
-                    data["changes"],
-                    data["channel"],
-                    data["type"],
-                    data["rdap"],
-                    data["whois"],
-                    data["whodap"],
-                    data["status"],
-                ),
-            )
-        conn.commit()
+        with sqlite3.connect(db_path) as conn:
+
+            # Insert the data into the SQLite database
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    """
+                        INSERT INTO destinations (id,destination, category, traffic_share, visits, changes, channel, type, rdap, whois, whodap,status)
+                        VALUES (?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
+                        """,
+                    (
+                        data["id"],
+                        data["destination"],
+                        data["category"],
+                        data["traffic_share"],
+                        data["visits"],
+                        data["changes"],
+                        data["channel"],
+                        data["type"],
+                        data["rdap"],
+                        data["whois"],
+                        data["whodap"],
+                        data["status"],
+                    ),
+                )
+            conn.commit()
         return domain  # Optionally return something if needed
 
 
@@ -333,7 +335,7 @@ def startDB():
     else:
         # Read the CSV file into a DataFrame
         df = pd.read_csv(
-            "stripe/stripe-final_combined.csv", encoding="utf-8"
+            filename + ".csv", encoding="utf-8"
         )  # Replace 'data.csv' with your CSV file name
 
         # Connect to an SQLite database
@@ -375,7 +377,9 @@ with ThreadPoolExecutor(
     max_workers=20
 ) as executor:  # You can adjust the number of workers
     future_to_domain = {
-        executor.submit(process_row, row, index, conn): row["destination"]
+        executor.submit(process_row, row, index, db_path="output.db"): row[
+            "destination"
+        ]
         for index, row in df.iterrows()
     }
 

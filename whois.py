@@ -271,53 +271,52 @@ def zip_folder(
 
 
 # This function will be executed concurrently for each row.
-def process_row(row, conn, index, db_path):
-    with sqlite3.connect(db_path) as conn:
+def process_row(row, index, conn):
 
-        data = row
-        data["id"] = index
-        domain = row["destination"]
-        if "status" not in row or (row["status"] and row["status"] == "0"):
-            # Check and perform RDAP, Whois, and WhoDAP lookups if necessary
-            if "rdap" not in row or row["rdap"] is None:
-                data["rdap"] = get_domain_date_rdap(domain)
-            else:
-                data["rdap"] = row["rdap"]
+    data = row
+    data["id"] = index
+    domain = row["destination"]
+    if "status" not in row or (row["status"] and row["status"] == "0"):
+        # Check and perform RDAP, Whois, and WhoDAP lookups if necessary
+        if "rdap" not in row or row["rdap"] is None:
+            data["rdap"] = get_domain_date_rdap(domain)
+        else:
+            data["rdap"] = row["rdap"]
 
-            if "whois" not in row or row["whois"] is None:
-                data["whois"] = get_domain_date_whois(domain)
-            else:
-                data["whois"] = row["whois"]
+        if "whois" not in row or row["whois"] is None:
+            data["whois"] = get_domain_date_whois(domain)
+        else:
+            data["whois"] = row["whois"]
 
-            if "whodap" not in row or row["whodap"] is None:
-                data["whodap"] = get_domain_date_whodap(domain)
-            else:
-                data["whodap"] = row["whodap"]
-            data["status"] = "1"
-            # Insert the data into the SQLite database
-            with conn.cursor() as cursor:
-                cursor.execute(
-                    """
+        if "whodap" not in row or row["whodap"] is None:
+            data["whodap"] = get_domain_date_whodap(domain)
+        else:
+            data["whodap"] = row["whodap"]
+        data["status"] = "1"
+        # Insert the data into the SQLite database
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
                     INSERT INTO destinations (id,destination, category, traffic_share, visits, changes, channel, type, rdap, whois, whodap,status)
                     VALUES (?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
                     """,
-                    (
-                        data["id"],
-                        data["destination"],
-                        data["category"],
-                        data["traffic_share"],
-                        data["visits"],
-                        data["changes"],
-                        data["channel"],
-                        data["type"],
-                        data["rdap"],
-                        data["whois"],
-                        data["whodap"],
-                        data["status"],
-                    ),
-                )
-            conn.commit()
-            return domain  # Optionally return something if needed
+                (
+                    data["id"],
+                    data["destination"],
+                    data["category"],
+                    data["traffic_share"],
+                    data["visits"],
+                    data["changes"],
+                    data["channel"],
+                    data["type"],
+                    data["rdap"],
+                    data["whois"],
+                    data["whodap"],
+                    data["status"],
+                ),
+            )
+        conn.commit()
+        return domain  # Optionally return something if needed
 
 
 # Note: Be cautious with the number of workers you use, especially with IO-bound tasks like network requests.
@@ -373,10 +372,10 @@ df, conn = startDB()
 # Use ThreadPoolExecutor or ProcessPoolExecutor for concurrency
 # Note: ThreadPoolExecutor is generally used for IO-bound tasks, while ProcessPoolExecutor is for CPU-bound tasks.
 with ThreadPoolExecutor(
-    max_workers=10
+    max_workers=20
 ) as executor:  # You can adjust the number of workers
     future_to_domain = {
-        executor.submit(process_row, row, index, "output.db"): row["destination"]
+        executor.submit(process_row, row, index, conn): row["destination"]
         for index, row in df.iterrows()
     }
 

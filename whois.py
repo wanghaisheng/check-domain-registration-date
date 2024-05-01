@@ -273,9 +273,22 @@ def zip_folder(
 # This function will be executed concurrently for each row.
 def process_row(row, index, db_path):
 
-    data = row
-    data["id"] = index
     domain = row["destination"]
+    # print("===========1", row["category"])
+    data = {
+        "id": index,
+        "destination": domain,
+        "category": row["category"],
+        "traffic_share": row["traffic_share"],
+        "visits": row["visits"],
+        "changes": row["changes"],
+        "channel": row["channel"],
+        "type": row["type"],
+        "rdap": None,
+        "whois": None,
+        "whodap": None,
+        "status": "0",
+    }
     if "status" not in row or (row["status"] and row["status"] == "0"):
         # Check and perform RDAP, Whois, and WhoDAP lookups if necessary
         if "rdap" not in row or row["rdap"] is None:
@@ -294,9 +307,10 @@ def process_row(row, index, db_path):
             data["whodap"] = row["whodap"]
         data["status"] = "1"
         with sqlite3.connect(db_path) as conn:
+            # Use a context manager to ensure the connection is closed properly
+            cursor = conn.cursor()  # Create a cursor object using the connection
+            try:
 
-            # Insert the data into the SQLite database
-            with conn.cursor() as cursor:
                 cursor.execute(
                     """
                         INSERT INTO destinations (id,destination, category, traffic_share, visits, changes, channel, type, rdap, whois, whodap,status)
@@ -317,7 +331,13 @@ def process_row(row, index, db_path):
                         data["status"],
                     ),
                 )
-            conn.commit()
+                conn.commit()
+            except sqlite3.Error as e:
+                print(f"An error occurred: {e}")
+                conn.rollback()  # Rollback any changes if an error occurs
+            finally:
+                cursor.close()  # Close the cursor when done
+
         return domain  # Optionally return something if needed
 
 

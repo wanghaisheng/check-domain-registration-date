@@ -271,7 +271,6 @@ def zip_folder(
 def process_row(row, index, db_path):
 
     domain = row["destination"]
-    # print("===========1", row["category"])
     data = {
         "id": index,
         "destination": domain,
@@ -281,61 +280,67 @@ def process_row(row, index, db_path):
         "changes": row["changes"],
         "channel": row["channel"],
         "type": row["type"],
-        "rdap": None,
-        "whois": None,
-        "whodap": None,
+        "rdap": str(row["rdap"]),
+        "whois": str(row["whois"]),
+        "whodap": str(row["whodap"]),
         "status": "0",
     }
-    if "status" not in row or (row["status"] and row["status"] == "0"):
-        # Check and perform RDAP, Whois, and WhoDAP lookups if necessary
-        if "rdap" not in row or row["rdap"] is None:
-            data["rdap"] = get_domain_date_rdap(domain)
-        else:
-            data["rdap"] = row["rdap"]
 
-        if "whois" not in row or row["whois"] is None:
-            data["whois"] = get_domain_date_whois(domain)
-        else:
-            data["whois"] = row["whois"]
+    if "rdap" not in row or data["rdap"] is None or data["rdap"] == str(float("nan")):
+        data["rdap"] = get_domain_date_rdap(domain)
 
-        if "whodap" not in row or row["whodap"] is None:
-            data["whodap"] = get_domain_date_whodap(domain)
-        else:
-            data["whodap"] = row["whodap"]
-        data["status"] = "1"
-        with sqlite3.connect(db_path) as conn:
-            # Use a context manager to ensure the connection is closed properly
-            cursor = conn.cursor()  # Create a cursor object using the connection
-            try:
+    if (
+        "whois" not in row
+        or data["whois"] is None
+        or data["whois"] == str(float("nan"))
+    ):
+        data["whois"] = get_domain_date_whois(domain)
 
-                cursor.execute(
-                    """
-                        INSERT INTO destinations (id,destination, category, traffic_share, visits, changes, channel, type, rdap, whois, whodap,status)
-                        VALUES (?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
-                        """,
-                    (
-                        data["id"],
-                        data["destination"],
-                        data["category"],
-                        data["traffic_share"],
-                        data["visits"],
-                        data["changes"],
-                        data["channel"],
-                        data["type"],
-                        data["rdap"],
-                        data["whois"],
-                        data["whodap"],
-                        data["status"],
-                    ),
-                )
-                conn.commit()
-            except sqlite3.Error as e:
-                print(f"An error occurred: {e}")
-                conn.rollback()  # Rollback any changes if an error occurs
-            finally:
-                cursor.close()  # Close the cursor when done
+    print("==========\n")
 
-        return domain  # Optionally return something if needed
+    print("===========check whodap", type(data["whodap"]))
+
+    if (
+        "whodap" not in row
+        or data["whodap"] is None
+        or data["whodap"] == str(float("nan"))
+    ):
+        data["whodap"] = get_domain_date_whodap(domain)
+
+    data["status"] = "1"
+    with sqlite3.connect(db_path) as conn:
+        # Use a context manager to ensure the connection is closed properly
+        cursor = conn.cursor()  # Create a cursor object using the connection
+        try:
+
+            cursor.execute(
+                """
+                    INSERT INTO destinations (id,destination, category, traffic_share, visits, changes, channel, type, rdap, whois, whodap,status)
+                    VALUES (?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
+                    """,
+                (
+                    data["id"],
+                    data["destination"],
+                    data["category"],
+                    data["traffic_share"],
+                    data["visits"],
+                    data["changes"],
+                    data["channel"],
+                    data["type"],
+                    data["rdap"],
+                    data["whois"],
+                    data["whodap"],
+                    data["status"],
+                ),
+            )
+            conn.commit()
+        except sqlite3.Error as e:
+            print(f"An error occurred: {e}")
+            conn.rollback()  # Rollback any changes if an error occurs
+        finally:
+            cursor.close()  # Close the cursor when done
+
+    return domain  # Optionally return something if needed
 
 
 # Note: Be cautious with the number of workers you use, especially with IO-bound tasks like network requests.

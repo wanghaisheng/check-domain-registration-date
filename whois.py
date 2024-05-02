@@ -337,9 +337,9 @@ def process_row(row, index, db_path):
 def startDB():
     df = pd.DataFrame()
     conn = None
-    if os.path.exists("output.db"):
+    if os.path.exists("output/output.db"):
         # Connect to the SQLite database
-        conn = sqlite3.connect("output.db")
+        conn = sqlite3.connect("output/output.db")
 
         # Read the data from the 'destinations' table into a pandas DataFrame
         df = pd.read_sql_query("SELECT * FROM destinations", conn)
@@ -350,7 +350,7 @@ def startDB():
         )  # Replace 'data.csv' with your CSV file name
 
         # Connect to an SQLite database
-        conn = sqlite3.connect("output.db")
+        conn = sqlite3.connect("output/output.db")
         # Create a table to store the results if it doesn't exist
         with closing(conn.cursor()) as cursor:
             cursor.execute(
@@ -374,7 +374,7 @@ def startDB():
             )
             conn.commit()
 
-        conn = sqlite3.connect("output.db")
+        conn = sqlite3.connect("output/output.db")
 
         # Read the data from the 'destinations' table into a pandas DataFrame
         # df = pd.read_sql_query("SELECT * FROM destinations", conn)
@@ -388,7 +388,7 @@ with ThreadPoolExecutor(
     max_workers=20
 ) as executor:  # You can adjust the number of workers
     future_to_domain = {
-        executor.submit(process_row, row, index, db_path="output.db"): row[
+        executor.submit(process_row, row, index, db_path="output/output.db"): row[
             "destination"
         ]
         for index, row in df.iterrows()
@@ -423,4 +423,4 @@ zip_temp_file = os.path.join(output_folder, f"temp{zip_count}.zip")
 zip_file = zipfile.ZipFile(zip_temp_file, "w", zipfile.ZIP_DEFLATED)
 
 # Compress the folder into multiple ZIP archives
-zip_folder(folder_path, output_folder, max_size_mb, zip_file,zip_temp_file,zip_count)
+zip_folder(folder_path, output_folder, max_size_mb, zip_file, zip_temp_file, zip_count)

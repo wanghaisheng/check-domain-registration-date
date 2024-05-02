@@ -415,12 +415,12 @@ conn.close()
 
 # # Write the DataFrame to a CSV file
 
-# max_size_mb = 1500
+max_size_mb = 1500
 
-# # Create a temporary ZIP file for the first archive
-# zip_count = 1
-# zip_temp_file = os.path.join(output_folder, f"temp{zip_count}.zip")
-# zip_file = zipfile.ZipFile(zip_temp_file, "w", zipfile.ZIP_DEFLATED)
+# Create a temporary ZIP file for the first archive
+zip_count = 1
+zip_temp_file = os.path.join(output_folder, f"temp{zip_count}.zip")
+zip_file = zipfile.ZipFile(zip_temp_file, "w", zipfile.ZIP_DEFLATED)
 
-# # Compress the folder into multiple ZIP archives
-# zip_folder(folder_path, output_folder, max_size_mb, zip_file, zip_temp_file, zip_count)
+# Compress the folder into multiple ZIP archives
+zip_folder(folder_path, output_folder, max_size_mb, zip_file, zip_temp_file, zip_count)

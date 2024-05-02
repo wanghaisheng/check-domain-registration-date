@@ -1,5 +1,5 @@
 name: query domain regisration date
-'on':
+"on":
   workflow_dispatch:
     inputs:
       URL:
@@ -14,7 +14,7 @@ jobs:
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: "3.10"
       - name: Install dependencies
         run: |
           sudo apt-get update      
@@ -22,15 +22,26 @@ jobs:
           pip install pandas  requests whodap python-whois
       - name: run demo
         run: |
-          python  whois.py 
+          python  whois.py
         env:
-          URL: '${{ github.event.inputs.URL }}'
-      - name: Release
-        uses: marvinpinto/action-automatic-releases@latest
+          URL: "${{ github.event.inputs.URL }}"
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          repo_token: '${{ secrets.GITHUB_TOKEN }}'
-          automatic_release_tag: '${{ github.run_id }}'
+          tag_name: v${{ github.run_number }}
+          release_name: Release ${{ github.run_number }}
+          draft: false
           prerelease: false
-          title: '${{ github.run_id }}'
-          files: |
-            output/*             
+
+      - name: Upload Release Assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./result/*
+          asset_name: result.zip
+          asset_content_type: application/zip

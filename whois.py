@@ -210,15 +210,6 @@ def get_domain_date_whodap(value):
                     return None
 
 
-folder_path = "./result"
-
-if not os.path.exists(folder_path):
-    os.mkdir(folder_path)
-output_folder = "./output"
-if not os.path.exists("output"):
-    os.mkdir("output")
-
-
 def zip_folder(
     folder_path, output_folder, max_size_mb, zip_file, zip_temp_file, zip_count
 ):
@@ -415,13 +406,15 @@ with ThreadPoolExecutor(
             print(f"Successfully processed: {domain}")
 # Close the database connection
 conn.close()
+folder_path = "./result"
 
+if not os.path.exists(folder_path):
+    os.mkdir(folder_path)
+output_folder = "./output"
+if not os.path.exists("output"):
+    os.mkdir("output")
 # Write the DataFrame to a CSV file
 
-
-# Specify the folder path you want to compress
-
-# Specify the maximum size of each RAR file in MB
 max_size_mb = 1500
 
 # Create a temporary ZIP file for the first archive
@@ -430,7 +423,4 @@ zip_temp_file = os.path.join(output_folder, f"temp{zip_count}.zip")
 zip_file = zipfile.ZipFile(zip_temp_file, "w", zipfile.ZIP_DEFLATED)
 
 # Compress the folder into multiple ZIP archives
-zip_folder(folder_path, output_folder, max_size_mb, zip_file, zip_temp_file, zip_count)
-
-
-#
+zip_folder(folder_path, output_folder, max_size_mb, zip_file,zip_temp_file,zip_count)

@@ -12,7 +12,13 @@ import zipfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 filename = os.getenv("URL")
+folder_path = "./result"
 
+if not os.path.exists(folder_path):
+    os.mkdir(folder_path)
+output_folder = "./output"
+if not os.path.exists("output"):
+    os.mkdir("output")
 headers_list = [
     {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.95 Safari/537.36"
@@ -406,13 +412,7 @@ with ThreadPoolExecutor(
             print(f"Successfully processed: {domain}")
 # Close the database connection
 conn.close()
-folder_path = "./result"
 
-if not os.path.exists(folder_path):
-    os.mkdir(folder_path)
-output_folder = "./output"
-if not os.path.exists("output"):
-    os.mkdir("output")
 # Write the DataFrame to a CSV file
 
 max_size_mb = 1500

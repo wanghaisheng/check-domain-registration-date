@@ -396,7 +396,7 @@ df, conn = startDB()
 # Use ThreadPoolExecutor or ProcessPoolExecutor for concurrency
 # Note: ThreadPoolExecutor is generally used for IO-bound tasks, while ProcessPoolExecutor is for CPU-bound tasks.
 with ThreadPoolExecutor(
-    max_workers=20
+    max_workers=50
 ) as executor:  # You can adjust the number of workers
     future_to_domain = {
         executor.submit(process_row, row, index, db_path="output/output.db"): row[

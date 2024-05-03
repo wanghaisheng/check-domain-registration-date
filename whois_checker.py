@@ -338,11 +338,11 @@ def whois21_check(domain):
 # This function will be executed concurrently for each row.
 def process_row(row, index, db_path):
     print(f"query {index}")
-    domain = row["destination"]
+    domain = str(row["destination"]).strip()
     # print("===========1", row["category"])
     data = {
         "id": index,
-        "destination": domain,
+        "destination": str(row["destination"]),
         "category": row["category"],
         "traffic_share": row["traffic_share"],
         "visits": row["visits"],

@@ -11,11 +11,9 @@ import shutil
 import zipfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-filename = os.getenv("URL")
-folder_path = "./result"
+# filename = os.getenv("URL")
+filename = "100"
 
-if not os.path.exists(folder_path):
-    os.mkdir(folder_path)
 output_folder = "./output"
 if not os.path.exists("output"):
     os.mkdir("output")
@@ -97,7 +95,7 @@ def get_domain_date_rdap(value):
                 print(creation_date_str)
                 return creation_date_str
     except:
-        max_retries = 10  # Set a maximum number of retries
+        max_retries = 5  # Set a maximum number of retries
         for i in range(max_retries):
             try:
                 proxy = get_proxy().get("proxy")
@@ -239,9 +237,8 @@ def whois_request(domain: str, server: str, port=43, timeout=5) -> str:
 
     # 关闭链接
     sock.close()
-
     buffdata = buff.decode("utf-8")
-
+    # print(buffdata)
     if buffdata:
         results = {}
 
@@ -252,9 +249,13 @@ def whois_request(domain: str, server: str, port=43, timeout=5) -> str:
             if ":" in line:
                 # Split the line into domain and server
                 # print(line.split(": "))
-                key, value = line.split(": ")
-                # Add the domain and server to the dictionary
-                results[key] = value
+                res = line.split(": ")
+                if len(res) == 2:
+                    key = res[0]
+                    value = res[-1]
+                    # Add the domain and server to the dictionary
+                    results[key] = value
+        print("try to get date", results)
         if "Registration Time" in results:
             return results["Registration Time"]
         elif "Creation Date" in results:
@@ -269,10 +270,6 @@ def get_domain_date_whodap(value):
 
     tld = value.split(".")[-1]
     domain = value.replace("." + tld, "")
-    # Looking up a domain name
-    #     print("tlld", tld, domain)
-    import asyncio
-
     import httpx
     import random
 
@@ -296,7 +293,7 @@ def get_domain_date_whodap(value):
         return response.events[1].eventDate if len(response.events) > 1 else None
 
     except:
-        max_retries = 10  # Set a maximum number of retries
+        max_retries = 5  # Set a maximum number of retries
         for i in range(max_retries):
             try:
                 proxy = get_proxy().get("proxy")
@@ -340,7 +337,7 @@ def whois21_check(domain):
 # This function will be executed concurrently for each row.
 # This function will be executed concurrently for each row.
 def process_row(row, index, db_path):
-    # print("----", type(row), row, row["destination"], row["category"])
+    print(f"query {index}")
     domain = row["destination"]
     # print("===========1", row["category"])
     data = {
@@ -360,7 +357,8 @@ def process_row(row, index, db_path):
 
     if "rdap" not in row or data["rdap"] is None or data["rdap"] == str(float("nan")):
         data["rdap"] = get_domain_date_rdap(domain)
-
+    else:
+        print("rdap here", data["rdap"])
     if (
         "whois" not in row
         or data["whois"] is None
@@ -373,14 +371,16 @@ def process_row(row, index, db_path):
         if data["whois"] == None:
             data["whois"] = whois21_check(domain)
         print("==========\n")
-
+    else:
+        print("whois here", data["whois"])
     if (
         "whodap" not in row
         or data["whodap"] is None
         or data["whodap"] == str(float("nan"))
     ):
         data["whodap"] = get_domain_date_whodap(domain)
-
+    else:
+        print("whodap here", data["whodap"])
     data["status"] = "1"
     # Insert the data into the SQLite database
 

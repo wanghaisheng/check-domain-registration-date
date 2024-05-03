@@ -541,6 +541,15 @@ with ThreadPoolExecutor(
         else:
             # Process the result if needed
             print(f"Successfully processed: {domain}")
+
+
+# Read the data from the 'destinations' table into a pandas DataFrame
+df = pd.read_sql_query("SELECT * FROM destinations", conn)
+
+
+# Write the DataFrame to a CSV file
+df.to_csv("output/results.csv", index=False, encoding="utf-8")
+
 # Close the database connection
 conn.close()
 

@@ -156,6 +156,115 @@ def delete_proxy(proxy):
     requests.get("http://demo.spiderpy.cn/delete/?proxy={}".format(proxy))
 
 
+import socket, json
+
+
+def whois_server_list():
+    # The provided text content
+    # text_content = """
+    #     ;WHOIS Servers List
+    #     ;Maintained by Nir Sofer
+    #     ;This servers list if freely available for any use and without any restriction.
+    #     ;For more information: http://www.nirsoft.net/whois_servers_list.html
+    #     ;Last updated on 16/02/2016
+    #     ac whois.nic.ac
+    #     ad whois.ripe.net
+    #     ae whois.aeda.net.ae
+    #     aero whois.aero
+    #     af whois.nic.af
+    #     ag whois.nic.ag
+    #     ai whois.ai
+    #     """
+    # The provided text content
+
+    response = requests.get("http://www.nirsoft.net/whois-servers.txt")
+    text_content = None
+    # Check if the request was successful
+    if response.status_code == 200:
+        # Get the text content from the response
+        text_content = response.text
+        # print(text_content)
+    else:
+        print(f"Failed to retrieve content, status code: {response.status_code}")
+        print("load from local file")
+        with open("nirsoft.net_whois-servers.txt", "r", encoding="utf8") as f:
+            text_content = f.read()
+
+    # Initialize an empty dictionary
+    whois_servers = {}
+
+    # Split the text content into lines and iterate over each line
+    for line in text_content.strip().split("\n"):
+        # Strip whitespace and ignore comments and empty lines
+        line = line.strip()
+        if line and not line.startswith(";"):
+            # Split the line into domain and server
+            domain, server = line.split()
+            # Add the domain and server to the dictionary
+            whois_servers[domain] = server
+
+        # Print the resulting dictionary
+    # print(whois_servers)
+    # json_data = json.dumps(whois_servers, ensure_ascii=False, indent=4)
+    if "network" in whois_servers == False:
+        whois_servers["network"] = "whois.nic.network"
+    return whois_servers
+
+
+whoisservers = whois_server_list()
+
+
+def whois_request(domain: str, server: str, port=43, timeout=5) -> str:
+    """
+    发送http请求，获取信息
+    :param domain:
+    :param server:
+    :param port:
+    :return:
+    """
+    # 创建连接
+    sock = socket.create_connection((server, port))
+    sock.settimeout(timeout)
+
+    # 发送请求
+    sock.send(("%s\r\n" % domain).encode("utf-8"))
+
+    # 接收数据
+    buff = bytes()
+    while True:
+        data = sock.recv(1024)
+        if len(data) == 0:
+            break
+        buff += data
+
+    # 关闭链接
+    sock.close()
+
+    buffdata = buff.decode("utf-8")
+
+    if buffdata:
+        results = {}
+
+        # Split the text content into lines and iterate over each line
+        for line in buffdata.strip().split("\n"):
+            # Strip whitespace and ignore comments and empty lines
+            line = line.strip()
+            if ":" in line:
+                # Split the line into domain and server
+                # print(line.split(": "))
+                key, value = line.split(": ")
+                # Add the domain and server to the dictionary
+                results[key] = value
+        if "Registration Time" in results:
+            return results["Registration Time"]
+        elif "Creation Date" in results:
+
+            return results["Creation Date"]
+
+        else:
+            return None
+
+
 def get_domain_date_whodap(value):
 
     tld = value.split(".")[-1]
@@ -267,6 +376,18 @@ def zip_folder(
     )
 
 
+def whois21_check(domain):
+
+    import whois21
+
+    whois = whois21.WHOIS(domain)
+
+    print(f"Creation date   : {whois.creation_date}")
+    # print(f"Expiration date : {whois.expires_date}")
+    # print(f"Updated date    : {whois.updated_date}")
+    return whois.creation_date
+
+
 # This function will be executed concurrently for each row.
 def process_row(row, index, db_path):
 
@@ -294,7 +415,12 @@ def process_row(row, index, db_path):
         or data["whois"] is None
         or data["whois"] == str(float("nan"))
     ):
-        data["whois"] = get_domain_date_whois(domain)
+        domainsuffix = domain.split(".")[-1]
+        server = whoisservers[domainsuffix]
+
+        data["whois"] = whois_request(domain, server)
+        if data["whois"] == None:
+            data["whois"] = whois21_check(domain)
 
     print("==========\n")
 

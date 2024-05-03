@@ -389,9 +389,11 @@ def whois21_check(domain):
 
 
 # This function will be executed concurrently for each row.
+# This function will be executed concurrently for each row.
 def process_row(row, index, db_path):
-
+    # print("----", type(row), row, row["destination"], row["category"])
     domain = row["destination"]
+    # print("===========1", row["category"])
     data = {
         "id": index,
         "destination": domain,
@@ -417,14 +419,12 @@ def process_row(row, index, db_path):
     ):
         domainsuffix = domain.split(".")[-1]
         server = whoisservers[domainsuffix]
+        print("----", domain, domainsuffix, server)
 
         data["whois"] = whois_request(domain, server)
         if data["whois"] == None:
             data["whois"] = whois21_check(domain)
-
-    print("==========\n")
-
-    print("===========check whodap", type(data["whodap"]))
+        print("==========\n")
 
     if (
         "whodap" not in row
@@ -434,10 +434,14 @@ def process_row(row, index, db_path):
         data["whodap"] = get_domain_date_whodap(domain)
 
     data["status"] = "1"
+    # Insert the data into the SQLite database
+    print("==========", data)
+
     with sqlite3.connect(db_path) as conn:
         # Use a context manager to ensure the connection is closed properly
         cursor = conn.cursor()  # Create a cursor object using the connection
         try:
+            # print("before add", data)
 
             cursor.execute(
                 """
@@ -466,7 +470,7 @@ def process_row(row, index, db_path):
         finally:
             cursor.close()  # Close the cursor when done
 
-    return domain  # Optionally return something if needed
+    return data  # Optionally return something if needed
 
 
 # Note: Be cautious with the number of workers you use, especially with IO-bound tasks like network requests.

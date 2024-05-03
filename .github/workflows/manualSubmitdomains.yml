@@ -22,6 +22,7 @@ jobs:
           pip install pandas  requests whodap whois21
       - name: run demo
         run: |
+          mkdir output
           python  whois_checker.py > output/1.log
         env:
           URL: "${{ github.event.inputs.URL }}"

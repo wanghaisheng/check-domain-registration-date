@@ -11,8 +11,8 @@ import shutil
 import zipfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# filename = os.getenv("URL")
-filename = "100"
+filename = os.getenv("URL")
+# filename = "100"
 
 output_folder = "./output"
 if not os.path.exists("output"):

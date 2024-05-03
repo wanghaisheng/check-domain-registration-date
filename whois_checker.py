@@ -325,57 +325,6 @@ def get_domain_date_whodap(value):
                     return None
 
 
-def zip_folder(
-    folder_path, output_folder, max_size_mb, zip_file, zip_temp_file, zip_count
-):
-    # Create the output folder if it doesn't exist
-    os.makedirs(output_folder, exist_ok=True)
-
-    # Convert the maximum size from MB to bytes
-    max_size_bytes = max_size_mb * 1024 * 1024
-
-    # Iterate over the directory tree
-    for root, dirs, files in os.walk(folder_path):
-        for file in files:
-            file_path = os.path.join(root, file)
-
-            # Add each file to the current ZIP archive
-            zip_file.write(file_path)
-
-            # Check if the current ZIP file exceeds the maximum size
-            if os.stat(file_path).st_size > max_size_bytes:
-                # Close the current ZIP archive
-                zip_file.close()
-
-                # Move the current ZIP file to the output folder
-                shutil.move(
-                    zip_temp_file,
-                    os.path.join(output_folder, f"archive{zip_count}.zip"),
-                )
-
-                print(
-                    f"Created 'archive{zip_count}.zip' (size: {os.path.getsize(os.path.join(output_folder, f'archive{zip_count}.zip'))} bytes)"
-                )
-
-                # Create a new ZIP archive for the remaining files
-                zip_count += 1
-                zip_temp_file = os.path.join(output_folder, f"temp{zip_count}.zip")
-                zip_file = zipfile.ZipFile(zip_temp_file, "w", zipfile.ZIP_DEFLATED)
-
-                # Delete the original file after adding it to the ZIP archive
-                os.remove(file_path)
-
-    # Close the last ZIP archive
-    zip_file.close()
-
-    # Move the last ZIP file to the output folder
-    shutil.move(zip_temp_file, os.path.join(output_folder, f"archive{zip_count}.zip"))
-
-    print(
-        f"Created 'archive{zip_count}.zip' (size: {os.path.getsize(os.path.join(output_folder, f'archive{zip_count}.zip'))} bytes)"
-    )
-
-
 def whois21_check(domain):
 
     import whois21
@@ -419,7 +368,6 @@ def process_row(row, index, db_path):
     ):
         domainsuffix = domain.split(".")[-1]
         server = whoisservers[domainsuffix]
-        print("----", domain, domainsuffix, server)
 
         data["whois"] = whois_request(domain, server)
         if data["whois"] == None:
@@ -435,7 +383,6 @@ def process_row(row, index, db_path):
 
     data["status"] = "1"
     # Insert the data into the SQLite database
-    print("==========", data)
 
     with sqlite3.connect(db_path) as conn:
         # Use a context manager to ensure the connection is closed properly
@@ -556,15 +503,3 @@ df.to_csv("output/results.csv", index=False, encoding="utf-8")
 
 # Close the database connection
 conn.close()
-
-# # Write the DataFrame to a CSV file
-
-max_size_mb = 1500
-
-# Create a temporary ZIP file for the first archive
-zip_count = 1
-zip_temp_file = os.path.join(output_folder, f"temp{zip_count}.zip")
-zip_file = zipfile.ZipFile(zip_temp_file, "w", zipfile.ZIP_DEFLATED)
-
-# Compress the folder into multiple ZIP archives
-zip_folder(folder_path, output_folder, max_size_mb, zip_file, zip_temp_file, zip_count)

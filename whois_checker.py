@@ -425,9 +425,9 @@ def process_row(row, index, db_path):
 def startDB():
     df = pd.DataFrame()
     conn = None
-    if os.path.exists("output/output.db"):
+    if os.path.exists(output_folder + "/" + filename + ".db"):
         # Connect to the SQLite database
-        conn = sqlite3.connect("output/output.db")
+        conn = sqlite3.connect(output_folder + "/" + filename + ".db")
 
         # Read the data from the 'destinations' table into a pandas DataFrame
         df = pd.read_sql_query("SELECT * FROM destinations", conn)
@@ -438,7 +438,7 @@ def startDB():
         )  # Replace 'data.csv' with your CSV file name
 
         # Connect to an SQLite database
-        conn = sqlite3.connect("output/output.db")
+        conn = sqlite3.connect(output_folder + "/" + filename + ".db")
         # Create a table to store the results if it doesn't exist
         with closing(conn.cursor()) as cursor:
             cursor.execute(
@@ -462,7 +462,7 @@ def startDB():
             )
             conn.commit()
 
-        conn = sqlite3.connect("output/output.db")
+        conn = sqlite3.connect(output_folder + "/" + filename + ".db")
 
         # Read the data from the 'destinations' table into a pandas DataFrame
         # df = pd.read_sql_query("SELECT * FROM destinations", conn)
@@ -476,9 +476,9 @@ with ThreadPoolExecutor(
     max_workers=50
 ) as executor:  # You can adjust the number of workers
     future_to_domain = {
-        executor.submit(process_row, row, index, db_path="output/output.db"): row[
-            "destination"
-        ]
+        executor.submit(
+            process_row, row, index, db_path=output_folder + "/" + filename + ".db"
+        ): row["destination"]
         for index, row in df.iterrows()
     }
 
@@ -499,7 +499,9 @@ df = pd.read_sql_query("SELECT * FROM destinations", conn)
 
 
 # Write the DataFrame to a CSV file
-df.to_csv("output/results.csv", index=False, encoding="utf-8")
+df.to_csv(
+    output_folder + "/" + filename + "-results.csv", index=False, encoding="utf-8"
+)
 
 # Close the database connection
 conn.close()

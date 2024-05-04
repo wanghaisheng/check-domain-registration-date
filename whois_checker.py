@@ -339,6 +339,9 @@ def whois21_check(domain):
 def process_row(row, index, db_path):
     print(f"query {index}")
     domain = str(row["destination"]).strip()
+    domain = domain.replace("https://", "")
+    domain = domain.replace("http://", "")
+
     # print("===========1", row["category"])
     data = {
         "id": index,

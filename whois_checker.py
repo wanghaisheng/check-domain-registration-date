@@ -337,7 +337,6 @@ def whois21_check(domain):
 # This function will be executed concurrently for each row.
 # This function will be executed concurrently for each row.
 def process_row(row, index, db_path):
-    print(f"query {index}")
     domain = str(row["destination"]).strip()
     domain = domain.replace("https://", "")
     domain = domain.replace("http://", "")
@@ -414,8 +413,10 @@ def process_row(row, index, db_path):
                 ),
             )
             conn.commit()
+            print(f"{index} ok")
         except sqlite3.Error as e:
-            print(f"An error occurred: {e}")
+            print(f"An error occurred: {e}--{index}")
+
             conn.rollback()  # Rollback any changes if an error occurs
         finally:
             cursor.close()  # Close the cursor when done

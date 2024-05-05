@@ -340,9 +340,18 @@ def convert_to_string(value):
     if isinstance(value, str):
         try:
             # 尝试将字符串解析为datetime对象
-            dt = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
-            # 如果成功，格式化为字符串
-            return dt.strftime("%Y-%m-%d %H:%M:%S")
+            if "+" in value:
+
+                # 尝试将字符串解析为datetime对象，包含时区偏移
+                dt = datetime.strptime(value, "%Y-%m-%d %H:%M:%S%z")
+                # 如果成功，格式化为字符串，不包含时区偏移
+                return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+            else:
+                dt = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+                # 如果成功，格式化为字符串
+                return dt.strftime("%Y-%m-%dT%H:%M:%S")
+
         except ValueError:
             # 如果解析失败，保持原始字符串
             return value
@@ -352,6 +361,108 @@ def convert_to_string(value):
     else:
         # 其他类型，使用str()转换为字符串
         return str(value)
+
+
+def query_whois_request_server(domain: str, server: str, port=43, timeout=5) -> str:
+    """
+    发送http请求，获取信息
+    :param domain:
+    :param server:
+    :param port:
+    :return:
+    """
+    # 创建连接
+    sock = socket.create_connection((server, port))
+    sock.settimeout(timeout)
+
+    # 发送请求
+    sock.send(("%s\r\n" % domain).encode("utf-8"))
+
+    # 接收数据
+    buff = bytes()
+    while True:
+        data = sock.recv(1024)
+        if len(data) == 0:
+            break
+        buff += data
+
+    # 关闭链接
+    sock.close()
+
+    buffdata = buff.decode("utf-8")
+    # print(buffdata)
+    if buffdata:
+        results = {}
+
+        # Split the text content into lines and iterate over each line
+        for line in buffdata.strip().split("\n"):
+            # Strip whitespace and ignore comments and empty lines
+            line = line.strip()
+            if ":" in line:
+                # Split the line into domain and server
+                # print(line.split(": "))
+                # print(line.split(": "))
+                res = line.split(": ")
+                if len(res) == 2:
+                    key = res[0]
+                    value = res[-1]
+                    # Add the domain and server to the dictionary
+                    results[key] = value  # Add the domain and server to the dictionary
+        if "whois" in results:
+            return results["whois"]
+
+        else:
+            return None
+# 定义一个函数来确定是否两个或更多的字段是相同的，并设置create_date
+def check_and_assign_create_date(row):
+    # 提取字段值，并处理None值，将None转换为对应格式的空字符串
+    rdap_value = row["rdap"] if pd.notnull(row["rdap"]) else ""
+    whodap_value = row["whodap"] if pd.notnull(row["whodap"]) else ""
+    whois_value = row["whois"] if pd.notnull(row["whois"]) else ""
+
+    # 比较字段值，确定是否有两个或更多字段相同
+    if (
+        (rdap_value == whodap_value)
+        or (rdap_value == whois_value)
+        or (whodap_value == whois_value)
+    ):
+        # 如果有相同的值，选择一个非空的字段作为create_date
+        create_date = (
+            rdap_value
+            if rdap_value
+            else (whodap_value if whodap_value else whois_value)
+        )
+        return create_date
+    else:
+        # 如果没有两个字段相同，create_date为None
+        return None
+
+
+# 定义一个函数来收集create_date为None的destination列表
+def collect_destinations_with_none_create_date(df):
+    destinations = df[df["create_date"].isnull()]["destination"]
+    return list(destinations)
+
+
+# 定义一个函数来分析域名后缀的频率
+def analyze_domain_suffix_frequency(destinations):
+    # 提取域名后缀
+    suffixes = [destination.split(".")[-1] for destination in destinations]
+    # 计算频率
+    frequency = Counter(suffixes)
+    return frequency
+
+
+# 定义一个函数来随机选择一个具有特定后缀的域名
+def random_choose_domain_by_suffix(destinations, suffix):
+    # 筛选出所有以特定后缀结尾的域名
+    domains_with_suffix = [domain for domain in destinations if domain.endswith(suffix)]
+    # 如果有域名匹配，随机选择一个
+    if domains_with_suffix:
+        return random.choice(domains_with_suffix)
+    else:
+        # 如果没有域名匹配，返回None
+        return None
 
 
 # This function will be executed concurrently for each row.
@@ -390,7 +501,14 @@ def process_row(row, index, db_path):
         domainsuffix = domain.split(".")[-1]
         server = whoisservers[domainsuffix]
 
-        data["whois"] = whois_request(domain, server)
+        if server is None:
+            root_server = "whois.iana.org"
+
+            server = query_whois_request_server(domain, root_server)
+            if server is None:
+                data["whois"] =None
+            else:
+                data["whois"] = whois_request(domain, server)
         if data["whois"] == None:
             data["whois"] = whois21_check(domain)
         print("==========\n")
@@ -532,6 +650,28 @@ df = pd.read_sql_query("SELECT * FROM destinations", conn)
 df.to_csv(
     output_folder + "/" + filename + "-results.csv", index=False, encoding="utf-8"
 )
+
+df["whois"] = df["whois"].apply(convert_to_string)
+
+df["whodap"] = df["whodap"].apply(convert_to_string)
+df["rdap"] = df["rdap"].apply(convert_to_string)
+
+# 应用函数到每一行，并创建新列create_date
+df["create_date"] = df.apply(check_and_assign_create_date, axis=1)
+# Write the DataFrame to a CSV file
+df.to_csv(
+    output_folder + "/" + filename + "-results-1.csv", index=False, encoding="utf-8"
+)
+# 应用第一个函数，收集destination列表
+destinations_with_none_create_date = collect_destinations_with_none_create_date(df)
+
+# 应用第二个函数，分析域名后缀频率
+domain_suffix_frequency = analyze_domain_suffix_frequency(
+    destinations_with_none_create_date
+)
+
+print("Destinations with None create_date: ", destinations_with_none_create_date)
+print("Domain suffix frequency: ", domain_suffix_frequency)
 
 # Close the database connection
 conn.close()

@@ -23,7 +23,7 @@ jobs:
       - name: run demo
         run: |
           mkdir output
-          python  whois_checker.py > output/1.log
+          python  whois_checker_semrush.py > output/1.log
         env:
           URL: "${{ github.event.inputs.URL }}"
       - name: Release

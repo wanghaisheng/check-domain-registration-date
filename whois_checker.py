@@ -435,7 +435,11 @@ def check_and_assign_create_date(row):
         return create_date
     else:
         # 如果没有两个字段相同，create_date为None
-        return None
+        if whois_value:
+            create_date=whois_value
+        else:
+        
+            return None
 
 
 # 定义一个函数来收集create_date为None的destination列表

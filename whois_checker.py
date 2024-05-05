@@ -10,6 +10,7 @@ import os
 import shutil
 import zipfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime
 
 filename = os.getenv("URL")
 # filename = "100"
@@ -333,7 +334,17 @@ def whois21_check(domain):
     # print(f"Updated date    : {whois.updated_date}")
     return whois.creation_date
 
-
+# 检查并转换字段的函数
+def convert_to_string(value):
+    if isinstance(value, str):
+        # 如果是字符串，直接返回
+        return value
+    elif isinstance(value, datetime):
+        # 如果是datetime对象，格式化为字符串
+        return value.strftime('%Y-%m-%d %H:%M:%S')
+    else:
+        # 其他类型，使用str()转换为字符串
+        return str(value)
 # This function will be executed concurrently for each row.
 # This function will be executed concurrently for each row.
 def process_row(row, index, db_path):
@@ -361,6 +372,7 @@ def process_row(row, index, db_path):
         data["rdap"] = get_domain_date_rdap(domain)
     else:
         print("rdap here", data["rdap"])
+
     if (
         "whois" not in row
         or data["whois"] is None
@@ -386,6 +398,14 @@ def process_row(row, index, db_path):
     data["status"] = "1"
     # Insert the data into the SQLite database
 
+    # 应用转换函数到data字典的每个字段
+    data['rdap'] = convert_to_string(data.get('rdap', ''))
+    data['whois'] = convert_to_string(data.get('whois', ''))
+    data['whodap'] = convert_to_string(data.get('whodap', ''))
+
+
+
+
     with sqlite3.connect(db_path) as conn:
         # Use a context manager to ensure the connection is closed properly
         cursor = conn.cursor()  # Create a cursor object using the connection
@@ -406,16 +426,16 @@ def process_row(row, index, db_path):
                     data["changes"],
                     data["channel"],
                     data["type"],
-                    data["rdap"],
-                    data["whois"],
-                    data["whodap"],
+                    str(data["rdap"]),
+                    str(data["whois"]),
+                    str(data["whodap"]),
                     data["status"],
                 ),
             )
             conn.commit()
-            print(f"{index} ok")
+            print(f"{index} ok---{domain}")
         except sqlite3.Error as e:
-            print(f"An error occurred: {e}--{index}")
+            print(f"An error occurred: {e}--{index}--{domain}")
 
             conn.rollback()  # Rollback any changes if an error occurs
         finally:

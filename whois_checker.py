@@ -598,10 +598,10 @@ def process_row(row, index, db_path):
             root_server = "whois.iana.org"
 
             server = query_whois_request_server(domain, root_server)
-            if server is None:
-                data["whois"] = None
-            else:
-                data["whois"] = whois_request(domain, server)
+        if server is None:
+            data["whois"] = None
+        else:
+            data["whois"] = whois_request(domain, server)
         if data["whois"] == None:
             data["whois"] = whois21_check(domain)
         print("==========\n")

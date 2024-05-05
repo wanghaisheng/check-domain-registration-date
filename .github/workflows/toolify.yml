@@ -1,4 +1,4 @@
-name: query regisration date of semrush traffic domain
+name: query domain regisration date of toolify ranking
 "on":
   workflow_dispatch:
     inputs:

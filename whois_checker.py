@@ -11,6 +11,7 @@ import shutil
 import zipfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
+from collections import Counter
 
 filename = os.getenv("URL")
 # filename = "100"
@@ -337,30 +338,115 @@ def whois21_check(domain):
 
 # 检查并转换字段的函数
 def convert_to_string(value):
-    if isinstance(value, str):
-        try:
-            # 尝试将字符串解析为datetime对象
-            if "+" in value:
+    if value == "" or value is None:
+        print("===", type(value), value)
 
-                # 尝试将字符串解析为datetime对象，包含时区偏移
-                dt = datetime.strptime(value, "%Y-%m-%d %H:%M:%S%z")
-                # 如果成功，格式化为字符串，不包含时区偏移
-                return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-
-            else:
-                dt = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
-                # 如果成功，格式化为字符串
-                return dt.strftime("%Y-%m-%dT%H:%M:%S")
-
-        except ValueError:
-            # 如果解析失败，保持原始字符串
-            return value
-    elif isinstance(value, datetime):
-        # 如果是datetime对象，格式化为字符串
-        return value.strftime("%Y-%m-%d %H:%M:%S")
+    # if pd.notnull(value):
+    if not value or value.isspace() or value == "None":
+        # value 是 None 或者是一个空字符串或只包含空白字符
+        # print("The value is None, empty, or contains only whitespace.")
+        return ""
     else:
-        # 其他类型，使用str()转换为字符串
-        return str(value)
+        # value 是一个非空字符串
+        print("The value is a non-empty string.", value)
+        # 检查value是否不是None
+        if isinstance(value, list):  # 如果是列表，处理列表中的每个元素
+            print("value list", value)
+            # 尝试将列表中的每个datetime对象转换为字符串
+            # 返回第一个非None的字符串表示，或者一个空字符串
+            return next(
+                (
+                    item.strftime("%Y-%m-%dT%H:%M:%SZ")
+                    for item in value
+                    if isinstance(item, datetime)
+                ),
+                "",
+            )
+        elif isinstance(value, str):
+            print("value str", value)
+            try:
+                if "+" in value:
+
+                    # 尝试将字符串解析为datetime对象，包含时区偏移
+                    dt = datetime.strptime(value, "%Y-%m-%d %H:%M:%S%z")
+                    # 如果成功，格式化为字符串，不包含时区偏移
+                    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+                elif "/" in value:
+                    dt = datetime.strptime(value, "%Y/%m/%dT%H:%M:%SZ")
+                    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+                elif ":" in value:
+
+                    dt = datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ")
+                    # 如果成功，格式化为字符串
+                    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+                else:
+                    dt = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+                    # 如果成功，格式化为字符串
+                    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+                    # 尝试将字符串解析为datetime对象
+            except ValueError:
+                # 如果解析失败，保持原始字符串
+
+                if "[" in value:
+                    print("[] in value", value)
+                    # 移除字符串两端的方括号
+                    value = value.strip("[]").strip()
+
+                    # 将清理后的字符串转换为datetime对象
+                    if ", datetime" in value:
+                        value = value.split(", datetime.datetime(")
+                        print("split", value)
+                        value = value[0]
+                        print("split first", value)
+                    else:
+                        print("no found serveal", value)
+
+                    # 这里的日期格式 "%Y, %m, %d, %H, %M" 与原始字符串中的格式相对应
+                    # 假设 value 是一个字符串，它可能包含以下格式之一：
+                    # "datetime.datetime(2021, 5, 31, 9, 35, 20)"
+                    # "datetime.datetime(2021, 5, 31, 9, 35)"
+                    # "datetime.datetime(2021, 5, 31)"
+
+                    # 移除字符串 "datetime.datetime(" 和结尾的 ")"
+                    cleaned_value = value[
+                        value.find("(") + 1 : value.rfind(")")
+                    ]  # 使用 find 和 rfind 来去除括号
+
+                    # 检测 cleaned_value 中包含哪些格式化代码
+                    if "," in cleaned_value:  # 检查是否有逗号分隔的多个组件
+                        format_str = "%Y, %m, %d, %H, %M, %S"
+                    else:  # 假设只有一个组件，如 "20210531"，可能是日期或日期时间
+                        format_str = "%Y%m%d"  # 这可以根据实际的字符串格式进行调整
+
+                    # 尝试解析字符串
+                    try:
+                        dt = datetime.strptime(cleaned_value, format_str)
+                        print(dt)
+
+                        return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+                    except ValueError as e:
+                        print("Parsing error:", e)
+
+                    # dt = datetime.strptime(value, "%Y-%m-%d %H:%M:%S%z")
+
+                else:
+                    print("value parse", value)
+
+                return value
+        elif isinstance(value, datetime):
+            print("value datetime", value)
+
+            # 如果是datetime对象，格式化为字符串
+            return value.strftime("%Y-%m-%dT%H:%M:%SZ")
+        else:
+            print("value else", value)
+
+            # 其他类型，使用str()转换为字符串
+            return str(value)
 
 
 def query_whois_request_server(domain: str, server: str, port=43, timeout=5) -> str:
@@ -413,6 +499,8 @@ def query_whois_request_server(domain: str, server: str, port=43, timeout=5) -> 
 
         else:
             return None
+
+
 # 定义一个函数来确定是否两个或更多的字段是相同的，并设置create_date
 def check_and_assign_create_date(row):
     # 提取字段值，并处理None值，将None转换为对应格式的空字符串
@@ -436,9 +524,10 @@ def check_and_assign_create_date(row):
     else:
         # 如果没有两个字段相同，create_date为None
         if whois_value:
-            create_date=whois_value
+            create_date = whois_value
+            return create_date
         else:
-        
+
             return None
 
 
@@ -510,7 +599,7 @@ def process_row(row, index, db_path):
 
             server = query_whois_request_server(domain, root_server)
             if server is None:
-                data["whois"] =None
+                data["whois"] = None
             else:
                 data["whois"] = whois_request(domain, server)
         if data["whois"] == None:

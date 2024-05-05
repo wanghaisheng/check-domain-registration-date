@@ -334,17 +334,26 @@ def whois21_check(domain):
     # print(f"Updated date    : {whois.updated_date}")
     return whois.creation_date
 
+
 # 检查并转换字段的函数
 def convert_to_string(value):
     if isinstance(value, str):
-        # 如果是字符串，直接返回
-        return value
+        try:
+            # 尝试将字符串解析为datetime对象
+            dt = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+            # 如果成功，格式化为字符串
+            return dt.strftime("%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            # 如果解析失败，保持原始字符串
+            return value
     elif isinstance(value, datetime):
         # 如果是datetime对象，格式化为字符串
-        return value.strftime('%Y-%m-%d %H:%M:%S')
+        return value.strftime("%Y-%m-%d %H:%M:%S")
     else:
         # 其他类型，使用str()转换为字符串
         return str(value)
+
+
 # This function will be executed concurrently for each row.
 # This function will be executed concurrently for each row.
 def process_row(row, index, db_path):
@@ -399,12 +408,9 @@ def process_row(row, index, db_path):
     # Insert the data into the SQLite database
 
     # 应用转换函数到data字典的每个字段
-    data['rdap'] = convert_to_string(data.get('rdap', ''))
-    data['whois'] = convert_to_string(data.get('whois', ''))
-    data['whodap'] = convert_to_string(data.get('whodap', ''))
-
-
-
+    data["rdap"] = convert_to_string(data.get("rdap", ""))
+    data["whois"] = convert_to_string(data.get("whois", ""))
+    data["whodap"] = convert_to_string(data.get("whodap", ""))
 
     with sqlite3.connect(db_path) as conn:
         # Use a context manager to ensure the connection is closed properly

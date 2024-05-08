@@ -221,7 +221,7 @@ folder_path = "./result"
 if not os.path.exists(folder_path):
     os.mkdir(folder_path)
 with ThreadPoolExecutor(
-    max_workers=10
+    max_workers=100
 ) as executor:  # You can adjust the number of workers
     future_to_domain = {
         executor.submit(process_row, row): row["me"] for index, row in csv_b.iterrows()

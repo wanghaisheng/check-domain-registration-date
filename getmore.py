@@ -110,6 +110,7 @@ def process_row(row):
                         print(
                             "Max retries reached. Exiting without a successful response."
                         )
+                    break
 
 
 def zip_folder(

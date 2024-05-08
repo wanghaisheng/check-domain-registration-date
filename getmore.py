@@ -64,7 +64,11 @@ def process_row(row):
         surl = url + sellerid + "?domain=1&seller=" + sellerid
 
         # 发送GET请求
-        response = requests.get(surl, headers=headers, proxies=proxies)
+        response = requests.get(
+            surl,
+            headers=headers,
+            # , proxies=proxies
+        )
 
         # 检查响应状态码
         if response.status_code == 200:
@@ -82,7 +86,7 @@ def process_row(row):
             for i in range(max_retries):
                 try:
                     proxy = get_proxy().get("proxy")
-                    # proxies = {"http": "http://{}".format(proxy)}
+                    proxies = {"http": "http://{}".format(proxy)}
 
                     response = requests.get(surl, headers=headers, proxies=proxies)
 

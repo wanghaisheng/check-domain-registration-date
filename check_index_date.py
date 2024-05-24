@@ -211,13 +211,17 @@ def get_domain_first_index_date1(row, valid_proxies, workingproxies):
             # print(element.get_text().strip())
             if len(elements_with_aaa) > 0:
                 r = elements_with_aaa[0].get_text()
-                save_valid_proxies("proxies_config.txt", workingproxies)
-                save_valid_proxies("store-indexdate.txt", [sellerid + "-", r])
+                save_valid_proxies(folder_path + "/proxies_config.txt", workingproxies)
+                save_valid_proxies(
+                    folder_path + "/store-indexdate.txt", [sellerid + "-", r]
+                )
 
                 return r.replace("Site first indexed by Google", "").strip()
 
             else:
-                save_valid_proxies("failed-store-indexdate.txt", [domain])
+                save_valid_proxies(
+                    folder_path + "/failed-store-indexdate.txt", [domain]
+                )
                 break
 
         except Exception as e:  # 捕获请求相关的异常

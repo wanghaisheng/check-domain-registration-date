@@ -7,6 +7,7 @@ import os
 import shutil
 import zipfile
 from bs4 import BeautifulSoup
+from DataRecorder import Recorder
 
 
 filename = os.getenv("URL")
@@ -219,9 +220,10 @@ def get_domain_first_index_date1(row, valid_proxies, workingproxies):
                     save_valid_proxies(
                         folder_path + "/proxies_config.txt", workingproxies
                     )
-                    save_valid_proxies(
-                        folder_path + "/store-indexdate.txt", [sellerid + "-", r[-1]]
-                    )
+                    # save_valid_proxies(
+                    #     folder_path + "/store-indexdate.txt", [sellerid + "-", r[-1]]
+                    # )
+                    dr.add_data({"sellerid": sellerid, "date": r[-1]})  # 接收dict数据
 
                     # return r[-1]
                     break
@@ -431,6 +433,9 @@ if not os.path.exists(output_folder):
 else:
     # If the directory exists, do nothing (pass)
     print("Directory 'output' already exists.")
+
+dr = Recorder(path=output_folder + "/data.csv", cache_size=500)
+
 with ThreadPoolExecutor(
     max_workers=200
 ) as executor:  # You can adjust the number of workers
@@ -446,6 +451,8 @@ with ThreadPoolExecutor(
         try:
             # Get the result of the execution, if you have returned something from process_row
             result = future.result()
+            dr.record()  # 手动调用写入方法
+
         except Exception as exc:
             print(f"Generated an exception: {exc} for domain {domain}")
         else:

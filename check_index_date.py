@@ -196,7 +196,7 @@ def get_domain_first_index_date1(row, valid_proxies, workingproxies):
             else:
                 print("3333333333")
             html_doc = r.content
-            print("==============get index date", r.content)
+            # print("==============get index date", r.content)
             # Parse the HTML document with BeautifulSoup
             soup = BeautifulSoup(html_doc, "html.parser")
 
@@ -211,6 +211,7 @@ def get_domain_first_index_date1(row, valid_proxies, workingproxies):
             # print(element.get_text().strip())
             if len(elements_with_aaa) > 0:
                 r = elements_with_aaa[0].get_text()
+                print('get data',r)
                 save_valid_proxies(folder_path + "/proxies_config.txt", workingproxies)
                 save_valid_proxies(
                     folder_path + "/store-indexdate.txt", [sellerid + "-", r]

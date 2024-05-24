@@ -355,9 +355,15 @@ if os.path.exists(folder_path) == False:
     os.mkdir(folder_path)
 
 output_folder = "./output"
-if os.path.exists("output") == False:
-    os.mkdir("output")
 
+# Check if the directory exists
+if not os.path.exists("output"):
+    # If the directory does not exist, create it
+    os.mkdir("output")
+    print("Directory 'output' was created.")
+else:
+    # If the directory exists, do nothing (pass)
+    print("Directory 'output' already exists.")
 with ThreadPoolExecutor(
     max_workers=200
 ) as executor:  # You can adjust the number of workers

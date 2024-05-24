@@ -346,8 +346,6 @@ def zip_folder_old(
 folder_path = "./result"
 
 # 读取Excel文件A和CSV文件B
-excel_a = pd.read_excel("to10k.xlsx")
-excel_a = excel_a.head(1000)
 csv_b = pd.read_csv(filename + ".csv")
 csv_b = csv_b.head(1000)
 

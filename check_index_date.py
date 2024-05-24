@@ -421,7 +421,9 @@ with ThreadPoolExecutor(
     max_workers=200
 ) as executor:  # You can adjust the number of workers
     future_to_domain = {
-        executor.submit(get_domain_first_index_date1, row): row["sellerId"]
+        executor.submit(
+            get_domain_first_index_date1, row, valid_proxies, valid_proxies
+        ): row["sellerId"]
         for index, row in csv_b.iterrows()
     }
 

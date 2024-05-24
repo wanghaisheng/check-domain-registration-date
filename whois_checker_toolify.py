@@ -12,9 +12,10 @@ import zipfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from collections import Counter
+from bs4 import BeautifulSoup
 
 filename = os.getenv("URL")
-# filename = "100"
+filename = "1"
 
 output_folder = "./output"
 if not os.path.exists("output"):
@@ -75,7 +76,95 @@ proxies = ["116.108.27.163:4005", "116.108.139.209:4006", "27.76.64.175:4001"]
 # Define the increment value
 increment_value = 1
 
+def get_domain_first_index_date2(url):
 
+    url="https://www.google.com/search?q=About+https://www.remini.com&tbm=ilp&sa=X&ved=2ahUKEwj3jraUsoGGAxUvSGwGHUbfAEwQv5AHegQIABAE"
+
+    # Site first indexed by Google
+# 2 years ago
+#45,552
+
+    #Source
+# www.remini.com was first indexed by Google in July 2021
+    proxies = {
+        "http": "socks5://127.0.0.1:1080",
+        "https": "socks5://127.0.0.1:1080",
+    }
+    lag = random.uniform(5, 10)
+    headers=random.choice(headers_list)
+    try:
+        r = requests.get(url, headers=headers,proxies=proxies)
+        print('status code')
+        if r.status_code==200:
+            print('okk')
+        else:
+            print('3333333333')
+        html_doc=r.content
+        print('==============get index date',r.content)
+        # Parse the HTML document with BeautifulSoup
+        soup = BeautifulSoup(html_doc, 'html.parser')
+
+        # Find all elements that contain the text 'aaa'
+        elements_with_aaa = soup.find_all(lambda tag: 'Site first indexed by Google' in tag.get_text())
+
+        # # Output the text content of each element that contains 'aaa'
+        for element in elements_with_aaa:
+            print(element.get_text().strip())
+        if len(elements_with_aaa)>0:
+            r=elements_with_aaa[0].get_text()
+            return r.replace('Site first indexed by Google','').strip()
+        else:
+            return ''
+    except:
+        print('failed to get index date')
+
+        return ''
+
+def get_domain_first_index_date(domain):
+
+    url ="https://www.google.com/search/about-this-result?ri=CgwSCgoGY29mZmVlEAMSAggBGgIIASIAKgAyBggDEgJ1czoAQgQIARAASgBaAGoAcgA&url=https%3A%2F%2Fwww.remini.com&hl=en_US&gl=US"
+    url ="https://www.google.com/search/about-this-result?url=https%3A%2F%2Fwww.remini.com&hl=en_US&gl=US"
+
+    #Source
+# www.remini.com was first indexed by Google in July 2021
+    proxies = {
+        "http": "socks5://127.0.0.1:1080",
+        "https": "socks5://127.0.0.1:1080",
+    }
+    lag = random.uniform(5, 10)
+    headers=random.choice(headers_list)
+    try:
+        r = requests.get(url, headers=headers,proxies=proxies)
+        print('status code')
+        if r.status_code==200:
+            print('okk')
+        else:
+            print('3333333333')
+        html_doc=r.content
+        print('==============get index date',r.content)
+        # Parse the HTML document with BeautifulSoup
+        soup = BeautifulSoup(html_doc, 'html.parser')
+
+        # Find all elements that contain the text 'aaa'
+        elements_with_aaa = soup.find_all(lambda tag: 'was first indexed by Google' in tag.get_text())
+
+        # # Output the text content of each element that contains 'aaa'
+        for element in elements_with_aaa:
+            print(element.get_text().strip())
+        if len(elements_with_aaa)>0:
+            r=elements_with_aaa[0].get_text()
+            if 'in' in r:
+                r=r.split('in')[-1]
+                if 'More' in r:
+                    print('rrrr',r)
+                    r=r.split('More')[0]
+                    return r
+        else:
+            return ''
+    except:
+        print('failed to get index date')
+
+        return ''
 def get_domain_date_rdap(value):
     headers = random.choice(headers_list)
 
@@ -340,7 +429,11 @@ def whois21_check(domain):
 def convert_to_string(value):
     if value == "" or value is None:
         print("===", type(value), value)
+    if isinstance(value, datetime):
+        print("value datetime", value)
 
+        # 如果是datetime对象，格式化为字符串
+        value= value.strftime("%Y-%m-%dT%H:%M:%SZ")
     # if pd.notnull(value):
     if not value or value.isspace() or value == "None":
         # value 是 None 或者是一个空字符串或只包含空白字符
@@ -533,7 +626,7 @@ def check_and_assign_create_date(row):
 
 # 定义一个函数来收集create_date为None的destination列表
 def collect_destinations_with_none_create_date(df):
-    destinations = df[df["create_date"].isnull()]["destination"]
+    destinations = df[df["create_date"].isnull()]["Website"]
     return list(destinations)
 
 
@@ -629,6 +722,14 @@ def process_row(row, index, db_path):
         data["whodap"] = get_domain_date_whodap(domain)
     else:
         print("whodap here", data["whodap"])
+
+    print('try to get index_date')
+    if 'index_date' not in row or data['index_date'] is None or data['index_date'] ==str(float('nan')):
+        print('call index date function')
+        data['index_date']=get_domain_first_index_date(domain)
+    else:
+        print('')
+
     data["status"] = "1"
     # Insert the data into the SQLite database
 
@@ -647,8 +748,8 @@ def process_row(row, index, db_path):
 
             cursor.execute(
                 """
-                    INSERT INTO destinations (id,Ranking, Tools, Website, Snapshot, PaymentPlatform, Monthlyvisits, Desc, rdap, whois, whodap,status)
-                    VALUES (?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
+                    INSERT INTO destinations (id,Ranking, Tools, Website, Snapshot, PaymentPlatform, Monthlyvisits, Desc, rdap, whois, whodap,status,index_date)
+                    VALUES (?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?)
                     """,
                 (
                     data["id"],
@@ -663,6 +764,7 @@ def process_row(row, index, db_path):
                     data["whois"],
                     data["whodap"],
                     data["status"],
+                    data['index_date']
                 ),
             )
             conn.commit()
@@ -713,7 +815,8 @@ def startDB():
                 rdap TEXT,
                 whodap TEXT,
                 whois TEXT,
-                status TEXT
+                status TEXT,
+                index_date TEXT
 
             )
             """
@@ -736,7 +839,7 @@ with ThreadPoolExecutor(
     future_to_domain = {
         executor.submit(
             process_row, row, index, db_path=output_folder + "/" + filename + ".db"
-        ): row["destination"]
+        ): row["Website"]
         for index, row in df.iterrows()
     }
 

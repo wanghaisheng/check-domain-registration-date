@@ -357,9 +357,9 @@ if os.path.exists(folder_path) == False:
 output_folder = "./output"
 
 # Check if the directory exists
-if not os.path.exists("output"):
+if not os.path.exists(output_folder):
     # If the directory does not exist, create it
-    os.mkdir("output")
+    os.mkdir(output_folder)
     print("Directory 'output' was created.")
 else:
     # If the directory exists, do nothing (pass)

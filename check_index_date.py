@@ -418,7 +418,7 @@ folder_path = "./result"
 
 # 读取Excel文件A和CSV文件B
 csv_b = pd.read_csv(filename + ".csv")
-csv_b = csv_b.head(5)
+csv_b = csv_b.head(1000)
 
 if os.path.exists(folder_path) == False:
     os.mkdir(folder_path)

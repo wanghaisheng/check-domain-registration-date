@@ -12,10 +12,6 @@ from bs4 import BeautifulSoup
 filename = os.getenv("URL")
 # filename = "100"
 
-output_folder = "./output"
-if not os.path.exists("output"):
-    os.mkdir("output")
-
 # 创建一个新的列"store url"，并初始化为None
 
 url = "https://www.google.com/search/about-this-result?origin=www.google.com&ons=2586&ri=CgwSCgoGcmVtaW5pEAMKCRIHCgNjb20QAxICCAEaACIAKgAyBggCEgJzZzoAQgQIARAASgBaDggBEgpyZW1pbmkuY29tcgB6AA&fd=GgIIAw&dis=EAE&url=https%3A%2F%2Fwww.remini.com%2F&sa=1&hl=en-SG&gl=SG&ilrm=zpr&vet=10CA8Qt5oMahcKEwjArc67poGGAxUAAAAAHQAAAAAQBA.iCM9ZqVaiN2x4w-i6YnYBQ.i&ved=0CA8Qt5oMahcKEwjArc67poGGAxUAAAAAHQAAAAAQBA&uact=1"
@@ -355,8 +351,13 @@ excel_a = excel_a.head(1000)
 csv_b = pd.read_csv(filename + ".csv")
 csv_b = csv_b.head(1000)
 
-if not os.path.exists(folder_path):
+if os.path.exists(folder_path) == False:
     os.mkdir(folder_path)
+
+output_folder = "./output"
+if os.path.exists("output") == False:
+    os.mkdir("output")
+
 with ThreadPoolExecutor(
     max_workers=200
 ) as executor:  # You can adjust the number of workers

@@ -22,7 +22,7 @@ jobs:
           pip install pandas  requests whodap whois21 beautifulsoup4
       - name: run demo
         run: |
-          python  check_index_date.py > output/1.log
+          python  check_index_date.py
         env:
           URL: "${{ github.event.inputs.URL }}"
       - name: Release

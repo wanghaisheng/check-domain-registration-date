@@ -213,7 +213,7 @@ def get_domain_first_index_date1(row, valid_proxies, workingproxies):
                 r = elements_with_aaa[0].get_text()
                 if "Site first indexed by Google" in r:
                     r = r.split("Site first indexed by Google")
-                    print("get data", r[0])
+                    # print("get data", r[0])
                     print("get data", r[-1])
 
                     save_valid_proxies(
@@ -223,7 +223,10 @@ def get_domain_first_index_date1(row, valid_proxies, workingproxies):
                         folder_path + "/store-indexdate.txt", [sellerid + "-", r[-1]]
                     )
 
-                    return r.replace("Site first indexed by Google", "").strip()
+                    # return r[-1]
+                    break
+                else:
+                    continue
 
             else:
                 save_valid_proxies(

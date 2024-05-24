@@ -343,6 +343,61 @@ def zip_folder_old(
     )
 
 
+def test_proxy(proxy_url, test_url):
+    try:
+        response = requests.get(
+            test_url,
+            proxies={"http": proxy_url, "https": proxy_url},
+            timeout=10,
+            # , verify=False  # Commented out the verify=False as it's not recommended to disable SSL verification
+        )
+        return proxy_url if response.status_code == 200 else None
+    except requests.exceptions.RequestException:
+        return None
+
+
+def clean_proxies(valid_proxies, test_url):
+    with ThreadPoolExecutor(max_workers=100) as executor:
+        # Using a list to collect the results of the futures
+        results = list(
+            executor.map(lambda proxy: test_proxy(proxy, test_url), valid_proxies)
+        )
+
+    # Filter out the None values from the results to get only the working proxies
+    updated_valid_proxies = [proxy for proxy in results if proxy is not None]
+    return updated_valid_proxies
+
+
+valid_proxies = []  # Fill this list with your proxy URLs
+
+# File to store valid proxies
+workingproxies = []
+
+
+if os.path.exists("valid_proxies.txt"):
+    valid_proxies = open("valid_proxies.txt", "r", encoding="utf8").readlines()
+print(valid_proxies)
+if valid_proxies:
+    valid_proxies = list(set(valid_proxies))
+    valid_proxies = [
+        line.strip().replace("\n", "") for line in valid_proxies if "\n" in line
+    ]
+
+    # Perform test for each proxy
+    print("start to clean up proxies")
+    test_url = "https://mercury.revseller.com"
+
+    # Call the function to clean up the proxies
+    # cleaned_proxies = clean_proxies(valid_proxies, test_url)  # Replace with your test URL
+
+    test_url = "https://google.com"
+
+    # Call the function to clean up the proxies
+    cleaned_proxies = clean_proxies(
+        valid_proxies, test_url
+    )  # Replace with your test URL
+
+    print("Cleaned Proxies:", cleaned_proxies)
 folder_path = "./result"
 
 # 读取Excel文件A和CSV文件B

@@ -457,5 +457,5 @@ with ThreadPoolExecutor(
 
     # Compress the folder into multiple ZIP archives
     zip_folder(
-        output_folder, folder_path, max_size_mb, zip_file, zip_temp_file, zip_count
+        folder_path, output_folder, max_size_mb, zip_file, zip_temp_file, zip_count
     )

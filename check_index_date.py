@@ -353,6 +353,8 @@ folder_path = "./result"
 excel_a = pd.read_excel("to10k.xlsx")
 excel_a = excel_a.head(1000)
 csv_b = pd.read_csv(filename + ".csv")
+csv_b = csv_b.head(1000)
+
 if not os.path.exists(folder_path):
     os.mkdir(folder_path)
 with ThreadPoolExecutor(

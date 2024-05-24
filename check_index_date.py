@@ -12,6 +12,7 @@ from DataRecorder import Recorder
 
 filename = os.getenv("URL")
 # filename = "100"
+counts = os.getenv("counts")
 
 # 创建一个新的列"store url"，并初始化为None
 
@@ -418,7 +419,8 @@ folder_path = "./result"
 
 # 读取Excel文件A和CSV文件B
 csv_b = pd.read_csv(filename + ".csv")
-csv_b = csv_b.head(1000)
+if counts and int(counts) > 0:
+    csv_b = csv_b.head(int(counts))
 
 if os.path.exists(folder_path) == False:
     os.mkdir(folder_path)

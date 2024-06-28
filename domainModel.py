@@ -2,7 +2,7 @@ from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import sessionmaker, declarative_base
 from db import create_turso_engine
 from dotenv import load_dotenv
-
+import os
 
 # Load environment variables from .env file
 load_dotenv()

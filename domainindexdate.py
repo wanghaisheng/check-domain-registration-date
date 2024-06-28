@@ -140,12 +140,12 @@ async def lookup_domain_with_retry(
                     pro_str = await get_proxy()
 
                     proxy_url = "http://{}".format(pro_str)
-                    if pro_str is None:
-                        proxy_url = "socks5://127.0.0.1:1080"
+                    # if pro_str is None:
+                        # proxy_url = "socks5://127.0.0.1:1080"
 
                 except Exception as e:
                     logger.error("get proxy error:{} use backup", e)
-                    proxy_url = "socks5://127.0.0.1:1080"
+                    # proxy_url = "socks5://127.0.0.1:1080"
         logger.info("current proxy{}", proxy_url)
 
         try:

@@ -5,3 +5,5 @@ whois21
 beautifulsoup4 
 DataRecorder
 loguru
+aiohttp
+aiohttp_socks

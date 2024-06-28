@@ -235,7 +235,8 @@ async def lookup_domain(
                     if r:
                         data = {
                             "domain": domain,
-                            "indexdate": r,
+                            "indexdate": r[-1] or None,
+                            'indexdata':r
                         }
                         outfile.add_data(data)
                 logger.info(
@@ -301,7 +302,7 @@ async def test_proxy(test_url, proxy_url):
 # asyncio.run(test_proxy('your_proxy_url_here'))
 
 
-async def process_domains(inputfilepath, domainkey, outfilepath, outfile):
+async def process_domains_indexdate(inputfilepath, domainkey, outfilepath, outfile):
 
     semaphore = asyncio.Semaphore(500)
     df = pd.read_csv(inputfilepath)

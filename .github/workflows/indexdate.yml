@@ -2,14 +2,19 @@ name: query  url index date by google
 "on":
   workflow_dispatch:
     inputs:
-      URL:
+      filename:
         description: csv filename
+        type: enviroment
+        required: true
+      colname:
+        description: csv col name
         type: enviroment
         required: true
       counts:
         description: how many rows
         type: number
         required: false
+        
 jobs:
   build-ubuntu:
     runs-on: ubuntu-latest
@@ -23,12 +28,13 @@ jobs:
         run: |
           sudo apt-get update      
           python -m pip install --upgrade pip
-          pip install pandas  requests whodap whois21 beautifulsoup4 DataRecorder
+          pip install -r dev.txt
       - name: run demo
         run: |
           python  check_index_date.py
         env:
-          URL: "${{ github.event.inputs.URL }}"
+          colname: "${{ github.event.inputs.colname }}"
+          filename: "${{ github.event.inputs.filename }}
           counts: "${{ github.event.inputs.counts }}"
 
       - name: Release

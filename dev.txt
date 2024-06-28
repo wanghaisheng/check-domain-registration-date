@@ -1,6 +1,7 @@
-lxml==4.6.3
-python_dateutil==2.8.0
-yt-dlp
-feedgen
 pandas
-rarfile
+requests
+whodap
+whois21 
+beautifulsoup4 
+DataRecorder
+loguru

@@ -34,7 +34,7 @@ jobs:
           python  check_index_date.py
         env:
           colname: "${{ github.event.inputs.colname }}"
-          filename: "${{ github.event.inputs.filename }}
+          filename: "${{ github.event.inputs.filename }}"
           counts: "${{ github.event.inputs.counts }}"
 
       - name: Release

@@ -304,7 +304,7 @@ async def test_proxy(test_url, proxy_url):
 async def process_domains(inputfilepath, domainkey, outfilepath, outfile):
 
     semaphore = asyncio.Semaphore(500)
-    df = pd.read_csv(inputfilepath, encoding="ISO-8859-1")
+    df = pd.read_csv(inputfilepath)
 
     # df = df.head(1)
     # domains = df[df["type"] == "aitools"]["domains"].tolist()

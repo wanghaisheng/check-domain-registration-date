@@ -262,9 +262,9 @@ if filename and filename.strip():
 
         start=datetime.now()
         inputfilepath=filename + ".csv"
-        logger.add(f"domain-index-ai.log")
+        logger.add(f"domain-index-title.log")
         # print(domains)
-        outfilepath=inputfilepath.replace('.csv','-index.csv')
+        outfilepath=inputfilepath.replace('.csv','-titles.csv')
         outfile = Recorder(output_folder+'/'+outfilepath, cache_size=50)
         asyncio.run(process_domains(inputfilepath,colname,outfilepath,outfile))
         end=datetime.now()
@@ -272,7 +272,6 @@ if filename and filename.strip():
         outfile.record()
 else:
     print('please check input')
-
 
 
 

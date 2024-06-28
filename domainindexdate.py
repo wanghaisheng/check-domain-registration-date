@@ -345,7 +345,7 @@ async def process_domains_indexdate(inputfilepath, domainkey, outfilepath, outfi
             #     proxy=random.choice(valid_proxies)
             #     print('pick proxy',proxy)
 
-            proxy = "socks5h://127.0.0.1:1080"
+            # proxy = "socks5h://127.0.0.1:1080"
             tld = get_tld(domain)
 
             if tld:

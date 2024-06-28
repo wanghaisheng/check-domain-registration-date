@@ -11,7 +11,7 @@ from DataRecorder import Recorder
 from datetime import datetime
 import asyncio
 from loguru import logger
-from domainindexdate import process_domains
+from domainindexdate import process_domains_indexdate
 
 
 
@@ -266,7 +266,7 @@ if filename and filename.strip():
         # print(domains)
         outfilepath=inputfilepath.replace('.csv','-index.csv')
         outfile = Recorder(output_folder+'/'+outfilepath, cache_size=50)
-        asyncio.run(process_domains(inputfilepath,colname,outfilepath,outfile))
+        asyncio.run(process_domains_indexdate(inputfilepath,colname,outfilepath,outfile))
         end=datetime.now()
         print('costing',end-start)
         outfile.record()

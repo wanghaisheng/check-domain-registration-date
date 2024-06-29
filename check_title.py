@@ -256,6 +256,10 @@ colname = os.getenv("colname")
 
 #  filename = "100"
 counts = os.getenv("counts")
+try:
+    counts=int(counts)
+except:
+    counts=0
 if filename and filename.strip():
     if colname and colname.strip():
 

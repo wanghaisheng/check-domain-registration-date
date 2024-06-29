@@ -25,7 +25,7 @@ import asyncio
 from contextlib import asynccontextmanager
 
 from loguru import logger
-from .DB import add_domain,Domain,read_domain_by_url
+from dbhelper import add_domain,Domain,read_domain_by_url
 
 # Replace this with your actual test URL
 test_url = 'http://example.com'

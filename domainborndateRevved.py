@@ -23,7 +23,7 @@ except ImportError:
 import aiohttp
 import asyncio
 from contextlib import asynccontextmanager
-from .DB import add_domain,Domain,read_domain_by_url
+from dbhelper import add_domain,Domain,read_domain_by_url
 
 from loguru import logger
 

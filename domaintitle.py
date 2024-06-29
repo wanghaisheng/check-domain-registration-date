@@ -25,6 +25,7 @@ import asyncio
 from contextlib import asynccontextmanager
 
 from loguru import logger
+from DB import add_domain,Domain,read_domain_by_url
 
 # Replace this with your actual test URL
 test_url = 'http://example.com'
@@ -210,6 +211,15 @@ async def lookup_domain(domain: str,proxy_url: str, semaphore: asyncio.Semaphore
                         'des':des
                     }
                     outfile.add_data(data)
+
+                    new_domain = Domain(
+                        url=domain,
+                    title=title,
+                    des=des,
+                    )
+                    add_domain(new_domain)
+
+
                 logger.info(f'{GREEN}SUCCESS {GREY}| {BLUE}{response.status} {GREY}| {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain}{GREEN}')
                 return True
             else:
@@ -298,6 +308,8 @@ async def process_domains_title(inputfilepath,colname,outfilepath,outfile):
 
             domain = domain.strip()
             domain=domain.split('//')[-1]
+            domain = domain.strip()
+
             proxy=None
 
             # if len(valid_proxies)>1:
@@ -305,6 +317,10 @@ async def process_domains_title(inputfilepath,colname,outfilepath,outfile):
             #     print('pick proxy',proxy)
 
             # proxy=f"http://{proxy}"
+            dbdata=read_domain_by_url(domain)
+            if dbdata.get('title') is  None and dbdata.get('des') is None:
+                continue
+
             tld = get_tld(domain)
 
             if tld:

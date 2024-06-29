@@ -48,16 +48,29 @@ def initDB():
         print('domsin table ok')
     else:
         print("The 'domains' table already exists.")
-def add_domain(new_domain):
+def add_domain(new_domain_data):
     session = Session()
 
+    session = Session()
     try:
-        session.add(new_domain)
+        # Assuming 'url' is the unique identifier for a domain
+        domain = session.query(Domain).filter_by(url=new_domain_data['url']).first()
+        if domain:
+            # Update existing domain
+            for key, value in new_domain_data.items():
+                if value is not None:
+                    setattr(domain, key, value)
+
+        else:
+            # Add new domain
+            domain = Domain(**new_domain_data)
+            session.add(domain)
         session.commit()
     except Exception as e:
         print(f"An error occurred: {e}")
     finally:
         session.close()
+
 def add_domain_list(new_domains):
     session = Session()
     try:

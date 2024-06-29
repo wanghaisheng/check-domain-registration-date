@@ -264,7 +264,7 @@ def cleandomain(domain):
 # To run the async function, you would do the following in your main code or script:
 # asyncio.run(test_proxy('your_proxy_url_here'))
 
-async def process_domains_revv(inputfilepath,colname,outfilepath,outfile):
+async def process_domains_revv(inputfilepath,colname,outfilepath,outfile,counts=0):
 
 
     
@@ -297,6 +297,8 @@ async def process_domains_revv(inputfilepath,colname,outfilepath,outfile):
 
     tasks = []
     domains=list(set(domains))
+    if counts!=0:
+        domains=domains[:counts]    
     for domain in domains:
         
         domain=cleandomain(domain)

@@ -282,7 +282,7 @@ def cleandomain(domain):
     if domain.endswith("/"):
         domain = domain.rstrip("/")
     return domain
-async def process_domains_title(inputfilepath,colname,outfilepath,outfile):
+async def process_domains_title(inputfilepath,colname,outfilepath,outfile,counts=0):
 
     
     semaphore = asyncio.Semaphore(500)
@@ -308,7 +308,11 @@ async def process_domains_title(inputfilepath,colname,outfilepath,outfile):
 
 
     tasks = []
+
     domains=list(set(domains))
+
+    if counts!=0:
+        domains=domains[:counts]    
     for domain in domains:
         
         domain=cleandomain(domain)

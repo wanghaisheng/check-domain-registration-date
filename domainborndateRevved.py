@@ -189,6 +189,8 @@ async def lookup_domain(domain: str,proxy_url: str, semaphore: asyncio.Semaphore
             # logger.info('url',query_url,'status',response.status)
             if response and response.status == 200:
                 data = await response.json()
+                logger.info('response json:{}',data)
+
                 rawdata=data
                 # Locate the specific eventDate
                 if 'results' in data:

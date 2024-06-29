@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String,DateTime
+from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import sessionmaker, declarative_base
 # from dbHelpers import create_turso_engine
 from dotenv import load_dotenv
@@ -51,30 +51,20 @@ def initDB():
 def add_domain(new_domain):
     session = Session()
 
-    try:
-        session.add(new_domain)
-        session.commit()
-    except Exception as e:
-        print(f"An error occurred: {e}")
-    finally:
-        session.close()
-def add_domain_list(new_domains):
+    session.add(new_domain)
+    session.commit()
+def add_domain_list(new_domains,session):
     session = Session()
-    try:
-        for new_domain in new_domains:
-            session.add(new_domain)
-            session.commit()    
-    except Exception as e:
-        print(f"An error occurred: {e}")
-    finally:
-        session.close()
 
-def read_domain_by_url(url):
+    for new_domain in new_domains:
+        session.add(new_domain)
+        session.commit()    
+def read_domain_by_name(domain_name,session):
     session = Session()
-    domain = session.query(Domain).filter(Domain.url == url).first()
+    domain = session.query(Domain).filter(Domain.domain == domain_name).first()
     session.close()
     return domain       
-def read_domain_all():
+def read_domain(session):
     # Query the database
     session = Session()
 
@@ -102,4 +92,3 @@ def check_table_exists():
     table_names = inspector.get_table_names()
     return 'domains' in table_names
 
-initDB()

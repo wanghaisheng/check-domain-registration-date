@@ -7,6 +7,6 @@ DataRecorder
 loguru
 aiohttp
 aiohttp_socks
-sqlalchemy 
-libsql-client
+sqlalchemy-libsql
+
 python-dotenv

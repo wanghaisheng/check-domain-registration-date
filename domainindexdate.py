@@ -10,6 +10,7 @@ from datetime import datetime
 
 import pandas as pd
 from DataRecorder import Recorder
+from DB import add_domain,Domain,read_domain_by_url
 
 # try:
 #     import aiofiles
@@ -239,6 +240,21 @@ async def lookup_domain(
                             'indexdata':r
                         }
                         outfile.add_data(data)
+
+
+
+                        # Domain=
+                        new_domain = Domain(
+                            url=domain,tld=get_tld(domain),
+                        title=None,
+                        indexat=r[-1] or None,
+                        des=None,
+                        bornat=None)
+                        add_domain(new_domain)
+
+
+
+
                 logger.info(
                     f"{GREEN}SUCCESS {GREY}| {BLUE}{response.status} {GREY}| {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain}{GREEN}"
                 )
@@ -338,9 +354,11 @@ async def process_domains_indexdate(inputfilepath, domainkey, outfilepath, outfi
             and len(domain.split(".")) > 1
         ):
             print(domain)
-
             domain = domain.strip()
             domain = domain.split("//")[-1]
+            dbdata=read_domain_by_url(domain)
+            if dbdata.get('bornat') is  None:
+                continue
             proxy = None
 
             # if len(valid_proxies)>1:

@@ -375,7 +375,7 @@ async def process_domains_indexdate(inputfilepath, domainkey, outfilepath, outfi
             print(domain)
 
             dbdata=read_domain_by_url(domain)
-            if dbdata and dbdata.get('bornat') is  None:
+            if dbdata and dbdata.indexat is  None:
                 continue
             proxy = None
 

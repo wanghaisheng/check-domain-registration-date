@@ -338,7 +338,7 @@ async def process_domains_title(inputfilepath,colname,outfilepath,outfile,counts
 
             # proxy=f"http://{proxy}"
             dbdata=read_domain_by_url(domain)
-            if dbdata and  dbdata.get('title') is  None and dbdata.get('des') is None:
+            if dbdata and  dbdata.title is  None and dbdata.des is None:
                 continue
 
             tld = get_tld(domain)

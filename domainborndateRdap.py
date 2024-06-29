@@ -366,7 +366,7 @@ async def process_domains_rdap(inputfilepath,colname,outfilepath,outfile,counts=
             logger.info(domain)
 
             dbdata=read_domain_by_url(domain)
-            if dbdata and dbdata.get('bornat') is  None:
+            if dbdata and dbdata.bornat is  None:
                 continue
 
             tld = get_tld(domain)

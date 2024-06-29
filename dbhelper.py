@@ -51,20 +51,17 @@ def initDB():
 def add_domain(new_domain_data):
     session = Session()
 
-    session = Session()
     try:
-        # Assuming 'url' is the unique identifier for a domain
-        domain = session.query(Domain).filter_by(url=new_domain_data['url']).first()
+        domain = session.query(Domain).filter_by(url=new_domain_data.url).first()
         if domain:
-            # Update existing domain
-            for key, value in new_domain_data.items():
-                if value is not None:
-                    setattr(domain, key, value)
+            # Update existing domain, ignoring attributes with None values
+            for attr, value in new_domain_data.__dict__.items():
+                if value is not None and getattr(domain, attr) != value:
+                    setattr(domain, attr, value)
 
         else:
             # Add new domain
-            domain = Domain(**new_domain_data)
-            session.add(domain)
+            session.add(new_domain_data)
         session.commit()
     except Exception as e:
         print(f"An error occurred: {e}")

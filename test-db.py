@@ -1,5 +1,5 @@
 
-from DB import add_domain,Domain
+from dbhelper import add_domain,Domain
 
 # Domain=
 new_domain = Domain(

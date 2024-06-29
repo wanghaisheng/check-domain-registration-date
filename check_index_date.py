@@ -266,7 +266,7 @@ if filename and filename.strip():
         # print(domains)
         outfilepath=inputfilepath.replace('.csv','-index.csv')
         outfile = Recorder(folder_path+'/'+outfilepath, cache_size=50)
-        asyncio.run(process_domains_indexdate(inputfilepath,colname,outfilepath,outfile))
+        asyncio.run(process_domains_indexdate(inputfilepath,colname,outfilepath,outfile,counts))
         end=datetime.now()
         print('costing',end-start)
         outfile.record()

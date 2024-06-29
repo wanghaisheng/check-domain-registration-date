@@ -302,7 +302,7 @@ async def test_proxy(test_url, proxy_url):
 # asyncio.run(test_proxy('your_proxy_url_here'))
 
 
-async def process_domains_indexdate(inputfilepath, domainkey, outfilepath, outfile):
+async def process_domains_indexdate(inputfilepath, domainkey, outfilepath, outfile,counts=0):
 
     semaphore = asyncio.Semaphore(500)
     df = pd.read_csv(inputfilepath)
@@ -326,6 +326,8 @@ async def process_domains_indexdate(inputfilepath, domainkey, outfilepath, outfi
 
     tasks = []
     domains = list(set(domains))
+    if counts!=0:
+        domains=domains[:counts]
     for domain in domains:
 
         if (

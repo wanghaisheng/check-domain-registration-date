@@ -138,24 +138,26 @@ async def getSession(proxy_url):
 async def lookup_domain_with_retry(domain: str, valid_proxies:list,proxy_url: str, semaphore: asyncio.Semaphore, outfile:Recorder,failedfile:Recorder):
     retry_count = 0
     while retry_count < MAX_RETRIES:
-        pro_str=None
-        if valid_proxies:
-            proxy_url=random.choice(valid_proxies)
-        else:
-            try:
-                pro_str=await get_proxy()
+        if retry_count>0:
+            pro_str=None
+            if valid_proxies:
+                proxy_url=random.choice(valid_proxies)
+            else:
+                try:
+                    pro_str=await get_proxy()
 
-                if pro_str is None:
-                
-                    pro_str=await get_proxy_proxypool()
+                    if pro_str is None:
+                    
+                        pro_str=await get_proxy_proxypool()
 
 
-            except Exception as e:
-                logger.error('get proxy error:{} use backup',e)
-        if proxy_url is None :
-            # proxy_url='http://127.0.0.1:1080'
-            break
-        proxy_url = "http://{}".format(pro_str)        
+                except Exception as e:
+                    logger.error('get proxy error:{} use backup',e)
+            if pro_str is None :
+                # proxy_url='http://127.0.0.1:1080'
+                break
+            else:
+                proxy_url = "http://{}".format(pro_str)             
 
         try:
             async with semaphore:

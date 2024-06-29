@@ -132,21 +132,26 @@ async def lookup_domain_with_retry(
 ):
     retry_count = 0
     while retry_count < MAX_RETRIES:
-        logger.info("current retry：{}", retry_count)
-        if retry_count > 0 and proxy_url == None:
+        if retry_count>0:
+            pro_str=None
             if valid_proxies:
-                proxy_url = random.choice(valid_proxies)
+                proxy_url=random.choice(valid_proxies)
             else:
                 try:
-                    pro_str = await get_proxy()
+                    pro_str=await get_proxy()
 
-                    proxy_url = "http://{}".format(pro_str)
-                    # if pro_str is None:
-                        # proxy_url = "socks5://127.0.0.1:1080"
+                    if pro_str is None:
+                    
+                        pro_str=await get_proxy_proxypool()
+
 
                 except Exception as e:
-                    logger.error("get proxy error:{} use backup", e)
-                    # proxy_url = "socks5://127.0.0.1:1080"
+                    logger.error('get proxy error:{} use backup',e)
+            if pro_str is None :
+                # proxy_url='http://127.0.0.1:1080'
+                break
+            else:
+                proxy_url = "http://{}".format(pro_str)        
         logger.info("current proxy{}", proxy_url)
 
         try:

@@ -106,19 +106,22 @@ async def get_proxy_proxypool():
 
 from aiohttp_socks import ProxyType, ProxyConnector, ChainProxyConnector
 
-
 async def getSession(proxy_url):
-    if "socks" in proxy_url:
-        # initialize a SOCKS proxy connector
-        connector = ProxyConnector.from_url(proxy_url)
+    if proxy_url:
+        if 'socks' in proxy_url:
+            # initialize a SOCKS proxy connector
+            connector = ProxyConnector.from_url(proxy_url)
 
-        # initialize an AIOHTTP client with the SOCKS proxy connector
-        session = aiohttp.ClientSession(connector=connector)
-        return session
+            # initialize an AIOHTTP client with the SOCKS proxy connector
+            session=  aiohttp.ClientSession(connector=connector)
+            return session
+        else:
+            session= aiohttp.ClientSession() 
+            return session        
+
     else:
-        session = aiohttp.ClientSession()
-        return session
-
+        session= aiohttp.ClientSession() 
+        return session        
 
 def get_tld(domain: str):
     """Extracts the top-level domain from a domain name."""
@@ -207,19 +210,28 @@ async def lookup_domain(
         logger.info("querying:{}", query_url)
 
         try:
-            session = await getSession(proxy_url)
-            response = None
-            if "socks" in proxy_url:
-                response = await session.get(query_url, timeout=20)
-
+            session=await getSession(proxy_url)
+            response=None
+            if proxy_url and 'socks' in proxy_url:
+                response=await session.get(query_url,timeout=20)
+                    
             else:
-                response = await session.get(
-                    query_url,
-                    proxy=proxy_url if proxy_url else None,
-                    # auth=auth.prepare_request,
-                    timeout=20,
-                )
+                response=await session.get(query_url, proxy=proxy_url if proxy_url else None,
+                # auth=auth.prepare_request, 
+                timeout=20)   
+                                
 
+            creation_date_str=''
+            rawdata=''
+            if response is None:
+                logger.error(f"Received None as response for {query_url}")
+                return False
+
+            # Parse JSON and check if data is None
+            data = await response.text()
+            if data is None:
+                logger.error(f"Received None as data for {query_url}")
+                return False
             if response.status == 200:
                 data = await response.text()
                 title = get_title_from_html(data)

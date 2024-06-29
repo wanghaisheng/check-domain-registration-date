@@ -91,18 +91,21 @@ def get_tld(domain: str):
 from aiohttp_socks import ProxyType, ProxyConnector, ChainProxyConnector
 
 async def getSession(proxy_url):
-    if 'socks' in proxy_url:
-        # initialize a SOCKS proxy connector
-        connector = ProxyConnector.from_url(proxy_url)
+    if proxy_url:
+        if 'socks' in proxy_url:
+            # initialize a SOCKS proxy connector
+            connector = ProxyConnector.from_url(proxy_url)
 
-        # initialize an AIOHTTP client with the SOCKS proxy connector
-        session=  aiohttp.ClientSession(connector=connector)
-        return session
+            # initialize an AIOHTTP client with the SOCKS proxy connector
+            session=  aiohttp.ClientSession(connector=connector)
+            return session
+        else:
+            session= aiohttp.ClientSession() 
+            return session        
+
     else:
         session= aiohttp.ClientSession() 
         return session        
-
-
 async def lookup_domain_with_retry(domain: str, valid_proxies:list,proxy_url: str, semaphore: asyncio.Semaphore, outfile:Recorder):
     retry_count = 0
     while retry_count < MAX_RETRIES:
@@ -174,7 +177,8 @@ async def lookup_domain(domain: str,proxy_url: str, semaphore: asyncio.Semaphore
 
         try:
             session=await getSession(proxy_url)
-            if 'socks' in proxy_url:
+            response=None
+            if proxy_url and 'socks' in proxy_url:
                 response=await session.get(query_url,timeout=20)
                     
             else:
@@ -182,6 +186,18 @@ async def lookup_domain(domain: str,proxy_url: str, semaphore: asyncio.Semaphore
                 # auth=auth.prepare_request, 
                 timeout=20)   
                                 
+
+            creation_date_str=''
+            rawdata=''
+            if response is None:
+                logger.error(f"Received None as response for {query_url}")
+                return False
+
+            # Parse JSON and check if data is None
+            data = await response.json()
+            if data is None:
+                logger.error(f"Received None as data for {query_url}")
+                return False    
 
             creation_date_str=''
             rawdata=''

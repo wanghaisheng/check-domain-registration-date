@@ -170,10 +170,10 @@ async def lookup_domain(domain: str,proxy_url: str, semaphore: asyncio.Semaphore
 
         logger.info('querying:{}',query_url)
 
+        response=None
 
         try:
             session=await getSession(proxy_url)
-            response=None
             if 'socks' in proxy_url:
                 response=await session.get(query_url,timeout=20)
                     
@@ -191,18 +191,21 @@ async def lookup_domain(domain: str,proxy_url: str, semaphore: asyncio.Semaphore
                 data = await response.json()
                 rawdata=data
                 # Locate the specific eventDate
-                for event in data.get("results", []):
-                        
-                        # logger.info("Found the event:", event)
-                        creation_date_str = event.get("createdDate")
-                        logger.info(creation_date_str)
-                if creation_date_str:
-                    data={'domain':domain,
-                        # 'rank':rankno,
-                        "born":creation_date_str,
-                        # 'raw':rawdata
-                        }
-                    outfile.add_data(data)
+                if 'results' in data:
+                    for event in data.get("results", []):
+                            
+                            # logger.info("Found the event:", event)
+                            creation_date_str = event.get("createdDate")
+                            logger.info(creation_date_str)
+                    if creation_date_str:
+                        data={'domain':domain,
+                            # 'rank':rankno,
+                            "born":creation_date_str,
+                            # 'raw':rawdata
+                            }
+                        outfile.add_data(data)
+                else:
+                    print('status 200 but without results key',data)
 
 
 
@@ -213,7 +216,6 @@ async def lookup_domain(domain: str,proxy_url: str, semaphore: asyncio.Semaphore
                     add_domain(new_domain)
 
 
-                logger.info(f'{GREEN}SUCCESS {GREY}| {BLUE}{response.status} {GREY}| {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain}{GREEN}')
                 return True
             else:
                 logger.warning(f"Non-200 status code: {response.status} for {domain}")
@@ -224,6 +226,8 @@ async def lookup_domain(domain: str,proxy_url: str, semaphore: asyncio.Semaphore
         except aiohttp.ClientError as e:
             logger.info(f'{RED} ClientError {GREY}| --- | {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain} {RED}| {e}{RESET}')
         except Exception as e:
+            if response.json():
+                print(response.json())
             logger.info(f'{RED}Exception  {GREY}| --- | {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain} {RED}| {e}{RESET}')
         finally:
             if session:

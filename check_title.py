@@ -262,10 +262,10 @@ if filename and filename.strip():
 
         start=datetime.now()
         inputfilepath=filename + ".csv"
-        logger.add(f"domain-index-title.log")
+        logger.add(f"{folder_path}/domain-index-title.log")
         # print(domains)
         outfilepath=inputfilepath.replace('.csv','-titles.csv')
-        outfile = Recorder(output_folder+'/'+outfilepath, cache_size=50)
+        outfile = Recorder(folder_path+'/'+outfilepath, cache_size=50)
         asyncio.run(process_domains_title(inputfilepath,colname,outfilepath,outfile))
         end=datetime.now()
         print('costing',end-start)

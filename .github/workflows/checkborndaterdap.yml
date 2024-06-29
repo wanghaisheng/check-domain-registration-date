@@ -1,4 +1,4 @@
-name: query  domain born date
+name: query  domain born date rdap
 "on":
   workflow_dispatch:
     inputs:

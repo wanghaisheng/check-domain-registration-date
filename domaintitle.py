@@ -25,7 +25,7 @@ import asyncio
 from contextlib import asynccontextmanager
 
 from loguru import logger
-from DB import add_domain,Domain,read_domain_by_url
+from .DB import add_domain,Domain,read_domain_by_url
 
 # Replace this with your actual test URL
 test_url = 'http://example.com'
@@ -88,16 +88,20 @@ async def fetch_rdap_servers():
                 for tld in tlds:
                     RDAP_SERVERS[tld] = rdap_url
 
-
 async def get_proxy():
-
+    proxy=None
     async with aiohttp.ClientSession() as session:
         try:
             async with session.get('http://demo.spiderpy.cn/get') as response:
                 data = await response.json()
-                proxy=data.get('proxy')
+                proxy=data['proxy']
                 return proxy
         except:
+            pass
+async def get_proxy_proxypool():
+    async with aiohttp.ClientSession() as session:
+
+        if proxy is None:
             try:
                 async with session.get('https://proxypool.scrape.center/random') as response:
                     proxy = await response.text()

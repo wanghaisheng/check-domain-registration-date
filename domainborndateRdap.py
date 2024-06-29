@@ -11,7 +11,7 @@ from datetime import datetime
 import pandas as pd
 from DataRecorder import Recorder
 from contextlib import asynccontextmanager
-from DB import add_domain,Domain,read_domain_by_url
+from .DB import add_domain,Domain,read_domain_by_url
 
 # try:
 #     import aiofiles

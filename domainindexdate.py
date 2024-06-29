@@ -24,6 +24,7 @@ except ImportError:
 import aiohttp
 import asyncio
 from contextlib import asynccontextmanager
+from .DB import add_domain,Domain,read_domain_by_url
 
 from loguru import logger
 
@@ -83,23 +84,25 @@ async def fetch_rdap_servers():
 
 
 async def get_proxy():
-
+    proxy=None
     async with aiohttp.ClientSession() as session:
         try:
-            async with session.get("http://demo.spiderpy.cn/get") as response:
+            async with session.get('http://demo.spiderpy.cn/get') as response:
                 data = await response.json()
-                proxy = data.get("proxy")
+                proxy=data['proxy']
                 return proxy
         except:
+            pass
+async def get_proxy_proxypool():
+    async with aiohttp.ClientSession() as session:
+
+        if proxy is None:
             try:
-                async with session.get(
-                    "https://proxypool.scrape.center/random"
-                ) as response:
+                async with session.get('https://proxypool.scrape.center/random') as response:
                     proxy = await response.text()
                     return proxy
             except:
                 return None
-
 
 from aiohttp_socks import ProxyType, ProxyConnector, ChainProxyConnector
 

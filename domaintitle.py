@@ -136,6 +136,7 @@ async def lookup_domain_with_retry(domain: str, valid_proxies:list,proxy_url: st
     while retry_count < MAX_RETRIES:
         if retry_count>0:
             pro_str=None
+            proxy_url=None
             if valid_proxies:
                 proxy_url=random.choice(valid_proxies)
             else:
@@ -145,14 +146,13 @@ async def lookup_domain_with_retry(domain: str, valid_proxies:list,proxy_url: st
                     if pro_str is None:
                     
                         pro_str=await get_proxy_proxypool()
-
+                    if pro_str is None :
+                        # proxy_url='http://127.0.0.1:1080'
+                        break
 
                 except Exception as e:
                     logger.error('get proxy error:{} use backup',e)
-            if pro_str is None :
-                # proxy_url='http://127.0.0.1:1080'
-                break
-            else:
+            if pro_str:
                 proxy_url = "http://{}".format(pro_str)        
         logger.info('current proxy{}',proxy_url)
 

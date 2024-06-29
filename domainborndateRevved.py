@@ -316,7 +316,7 @@ async def process_domains_revv(inputfilepath,colname,outfilepath,outfile,counts=
 
 
             dbdata=read_domain_by_url(domain)
-            if dbdata.get('bornat') is  None:
+            if dbdata and dbdata.get('bornat') is  None:
                 continue
             proxy=None
 

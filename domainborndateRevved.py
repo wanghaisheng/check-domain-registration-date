@@ -242,17 +242,22 @@ async def lookup_domain(domain: str,proxy_url: str, semaphore: asyncio.Semaphore
 
         except asyncio.TimeoutError as e:
             logger.info(f'{RED} TimeoutError {GREY}| --- | {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain} {RED}| {e}{RESET}')
+            raise
+
         except aiohttp.ClientError as e:
             logger.info(f'{RED} ClientError {GREY}| --- | {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain} {RED}| {e}{RESET}')
+            raise
+
         except Exception as e:
             if response.json():
                 print(response.json())
             logger.info(f'{RED}Exception  {GREY}| --- | {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain} {RED}| {e}{RESET}')
+            raise
+
         finally:
             if session:
                 await session.close()
 
-    return False
 
 
 

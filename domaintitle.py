@@ -352,7 +352,7 @@ async def process_domains_title(inputfilepath,colname,outfilepath,outfile,counts
             #     proxy=random.choice(valid_proxies)
             #     print('pick proxy',proxy)
 
-            # proxy=f"http://{proxy}"
+            proxy=f"http://127.0.0.1:1080"
             dbdata=read_domain_by_url(domain)
             if dbdata and  dbdata.title is  None and dbdata.des is None:
                 continue

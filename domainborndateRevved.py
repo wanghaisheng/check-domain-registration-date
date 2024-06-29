@@ -23,13 +23,15 @@ except ImportError:
 import aiohttp
 import asyncio
 from contextlib import asynccontextmanager
+from DB import add_domain,Domain,read_domain_by_url
 
 from loguru import logger
-from DB import add_domain,Domain,read_domain_by_url
 
 # Replace this with your actual test URL
 test_url = 'http://example.com'
-
+MAX_RETRIES = 3
+INITIAL_DELAY = 1
+MAX_DELAY = 10
 # Replace this with your actual outfile object and method for adding data
 # outfile = YourOutfileClass()
 # Color codes
@@ -43,38 +45,11 @@ RED    = '\033[1;31m'
 YELLOW = '\033[1;33m'
 RESET  = '\033[0m'
 
-MAX_RETRIES = 3
-INITIAL_DELAY = 1
-MAX_DELAY = 10
-
 # Setup basic logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Global variable to store RDAP servers
 RDAP_SERVERS = {}
-def get_title_from_html(html):
-    title = 'not content!'
-    try:
-        title_patten = r'<title>(\s*?.*?\s*?)</title>'
-        result = re.findall(title_patten, html)
-        if len(result) >= 1:
-            title = result[0]
-            title = title.strip()
-    except:
-        logger.error('cannot find title')
-    return title
-def get_des_from_html(html):
-    title = 'not content!'
-    try:
-        title_patten = r'<meta name="description" content="(\s*?.*?\s*?)/>'
-        result = re.findall(title_patten, html)
-        if len(result) >= 1:
-            title = result[0]
-            title = title.strip()
-    except:
-        logger.error('cannot find description')
-    return title
-
 
 async def fetch_rdap_servers():
     '''Fetches RDAP servers from IANA's RDAP Bootstrap file.'''
@@ -89,13 +64,14 @@ async def fetch_rdap_servers():
                     RDAP_SERVERS[tld] = rdap_url
 
 
+
 async def get_proxy():
 
     async with aiohttp.ClientSession() as session:
         try:
             async with session.get('http://demo.spiderpy.cn/get') as response:
                 data = await response.json()
-                proxy=data.get('proxy')
+                proxy=data['proxy']
                 return proxy
         except:
             try:
@@ -104,6 +80,10 @@ async def get_proxy():
                     return proxy
             except:
                 return None
+def get_tld(domain: str):
+    '''Extracts the top-level domain from a domain name.'''
+    parts = domain.split('.')
+    return '.'.join(parts[1:]) if len(parts) > 1 else parts[0]
 from aiohttp_socks import ProxyType, ProxyConnector, ChainProxyConnector
 
 async def getSession(proxy_url):
@@ -119,14 +99,10 @@ async def getSession(proxy_url):
         return session        
 
 
-def get_tld(domain: str):
-    '''Extracts the top-level domain from a domain name.'''
-    parts = domain.split('.')
-    return '.'.join(parts[1:]) if len(parts) > 1 else parts[0]
 async def lookup_domain_with_retry(domain: str, valid_proxies:list,proxy_url: str, semaphore: asyncio.Semaphore, outfile:Recorder):
     retry_count = 0
     while retry_count < MAX_RETRIES:
-        logger.info('current retry：{}',retry_count)
+        pro_str=None
         if retry_count>0 and proxy_url==None:
             if valid_proxies:
                 proxy_url=random.choice(valid_proxies)
@@ -134,35 +110,35 @@ async def lookup_domain_with_retry(domain: str, valid_proxies:list,proxy_url: st
                 try:
                     pro_str=await get_proxy()
 
-                    proxy_url = "http://{}".format(pro_str)        
-                    if pro_str is None:
-                        proxy_url='socks5://127.0.0.1:1080'
 
                 except Exception as e:
                     logger.error('get proxy error:{} use backup',e)
-                    proxy_url='socks5://127.0.0.1:1080'
-        logger.info('current proxy{}',proxy_url)
+
+        if pro_str is None:
+            break
+        proxy_url = "http://{}".format(pro_str)        
+
 
         try:
             async with semaphore:
-                result = await asyncio.wait_for(lookup_domain(domain, proxy_url, semaphore, outfile), timeout=30)
+                result = await lookup_domain(domain, proxy_url,semaphore, outfile)
             if result:
                 if proxy_url and proxy_url not in valid_proxies:
                     valid_proxies.append(proxy_url)
                 return result
-        except asyncio.TimeoutError:
-            logger.error(f"Timeout occurred for domain: {domain} with proxy: {proxy_url}")
         except Exception as e:
             logger.error(f"Error occurred: {e}")
+            if proxy_url in valid_proxies:
+                valid_proxies.remove(proxy_url)
+        
         retry_count += 1
-        # if retry_count < MAX_RETRIES:
-        #     delay = min(INITIAL_DELAY * (2 ** retry_count), MAX_DELAY)
-        #     logger.info(f"Retrying in {delay} seconds with proxy {proxy_url}...")
-        #     await asyncio.sleep(delay)
+        if retry_count < MAX_RETRIES:
+            delay = min(INITIAL_DELAY * (2 ** retry_count), MAX_DELAY)
+            logger.info(f"Retrying in {delay} seconds with proxy {proxy_url}...")
+            await asyncio.sleep(delay)
     
     logger.error(f"Max retries reached for domain: {domain}")
-    return None
-
+    return None    
 async def lookup_domain(domain: str,proxy_url: str, semaphore: asyncio.Semaphore, outfile:Recorder):
     '''
     Looks up a domain using the RDAP protocol.
@@ -179,9 +155,8 @@ async def lookup_domain(domain: str,proxy_url: str, semaphore: asyncio.Semaphore
         logger.info('use proxy_url:{}',proxy_url)
 
 
-        query_url=domain
-        if 'http' not in domain:
-            query_url=f'https://{domain}'
+        query_url=f'https://domains.revved.com/v1/whois?domains={domain}'
+
 
         session = None  # Initialize session at the beginning of the function
 
@@ -200,23 +175,33 @@ async def lookup_domain(domain: str,proxy_url: str, semaphore: asyncio.Semaphore
                 timeout=20)   
                                 
 
-            if response.status == 200:
-                data = await response.text()
-                title = get_title_from_html(data)
-                des=get_des_from_html(data)
-                if title:
-                    data = {
-                        'domain': domain,
-                        "title": title,
-                        'des':des
-                    }
+            creation_date_str=''
+            rawdata=''
+
+            # logger.info('url',query_url,'status',response.status)
+            if response and response.status == 200:
+                data = await response.json()
+                rawdata=data
+                # Locate the specific eventDate
+                for event in data.get("results", []):
+                        
+                        # logger.info("Found the event:", event)
+                        creation_date_str = event.get("createdDate")
+                        logger.info(creation_date_str)
+                if creation_date_str:
+                    data={'domain':domain,
+                        # 'rank':rankno,
+                        "born":creation_date_str,
+                        # 'raw':rawdata
+                        }
                     outfile.add_data(data)
 
+
+
+                    # Domain=
                     new_domain = Domain(
                         url=domain,
-                    title=title,
-                    des=des,
-                    )
+                    bornat=creation_date_str)
                     add_domain(new_domain)
 
 
@@ -228,19 +213,16 @@ async def lookup_domain(domain: str,proxy_url: str, semaphore: asyncio.Semaphore
 
         except asyncio.TimeoutError as e:
             logger.info(f'{RED} TimeoutError {GREY}| --- | {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain} {RED}| {e}{RESET}')
-            raise
-
         except aiohttp.ClientError as e:
             logger.info(f'{RED} ClientError {GREY}| --- | {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain} {RED}| {e}{RESET}')
-            raise
-        
         except Exception as e:
             logger.info(f'{RED}Exception  {GREY}| --- | {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain} {RED}| {e}{RESET}')
-            raise
-        
         finally:
             if session:
                 await session.close()
+
+    return False
+
 
 
 @asynccontextmanager
@@ -268,9 +250,6 @@ async def test_proxy(test_url,proxy_url):
     except aiohttp.ClientError:
 
         return False
-
-# To run the async function, you would do the following in your main code or script:
-# asyncio.run(test_proxy('your_proxy_url_here'))
 def cleandomain(domain):
     domain=domain.strip()
     if "https://" in domain:
@@ -282,7 +261,11 @@ def cleandomain(domain):
     if domain.endswith("/"):
         domain = domain.rstrip("/")
     return domain
-async def process_domains_title(inputfilepath,colname,outfilepath,outfile):
+# To run the async function, you would do the following in your main code or script:
+# asyncio.run(test_proxy('your_proxy_url_here'))
+
+async def process_domains_revv(inputfilepath,colname,outfilepath,outfile):
+
 
     
     semaphore = asyncio.Semaphore(500)
@@ -307,33 +290,32 @@ async def process_domains_title(inputfilepath,colname,outfilepath,outfile):
     # print(len(domains))
 
 
+
+
+    await    fetch_rdap_servers()
+    # print(RDAP_SERVERS)
+
     tasks = []
     domains=list(set(domains))
     for domain in domains:
         
         domain=cleandomain(domain)
 
-
         if domain and domain not in  donedomains and type(domain)==str and "." in domain and len(domain.split('.'))>1:
+            print(domain)
 
 
-            proxy=None
-
-            # if len(valid_proxies)>1:
-            #     proxy=random.choice(valid_proxies)
-            #     print('pick proxy',proxy)
-
-            # proxy=f"http://{proxy}"
             dbdata=read_domain_by_url(domain)
-            if dbdata.get('title') is  None and dbdata.get('des') is None:
+            if dbdata.get('bornat') is  None:
                 continue
+            proxy=None
 
             tld = get_tld(domain)
 
             if tld:
 
                 try:
-                    task = asyncio.create_task(lookup_domain_with_retry(domain, [],proxy, semaphore, outfile))
+                    task = asyncio.create_task(lookup_domain_with_retry(domain,[],proxy, semaphore, outfile))
                     # Ensure the semaphore is released even if the task fails
                     task.add_done_callback(lambda t: semaphore.release())
                     # print('done', url)
@@ -348,4 +330,17 @@ async def process_domains_title(inputfilepath,colname,outfilepath,outfile):
     for task in tasks:
         await task
 
+# start=datetime.now()
+# inputfilepath=r'D:\Download\audio-visual\a_ideas\results-traffic-journey-srcs-rdap-error.csv'
+# inputfilepath=r'D:\Download\audio-visual\a_ideas\results-traffic-journey-combined-rdap-error.csv'
+# inputfilepath=r'D:\Download\audio-visual\a_ideas\results-organic-competitors-combined-rdap-error.csv'
+# # inputfilepath=r'D:\Download\audio-visual\a_ideas\top1000ai.csv'
+# domainkey='domain'
 
+# # print(domains)
+# outfilepath=inputfilepath.replace('error.csv','-reved.csv')
+# outfile = Recorder(outfilepath, cache_size=10)
+# asyncio.run(process_domains())
+# end=datetime.now()
+# print('costing',end-start)
+# outfile.record()

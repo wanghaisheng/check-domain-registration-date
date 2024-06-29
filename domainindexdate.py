@@ -316,7 +316,17 @@ async def test_proxy(test_url, proxy_url):
 
 # To run the async function, you would do the following in your main code or script:
 # asyncio.run(test_proxy('your_proxy_url_here'))
-
+def cleandomain(domain):
+    domain=domain.strip()
+    if "https://" in domain:
+        domain = domain.replace("https://", "")
+    if "http://" in domain:
+        domain = domain.replace("http://", "")
+    if "www." in domain:
+        domain = domain.replace("www.", "")
+    if domain.endswith("/"):
+        domain = domain.rstrip("/")
+    return domain
 
 async def process_domains_indexdate(inputfilepath, domainkey, outfilepath, outfile,counts=0):
 
@@ -345,6 +355,7 @@ async def process_domains_indexdate(inputfilepath, domainkey, outfilepath, outfi
     if counts!=0:
         domains=domains[:counts]
     for domain in domains:
+        domain=cleandomain(domain)
 
         if (
             domain
@@ -354,8 +365,7 @@ async def process_domains_indexdate(inputfilepath, domainkey, outfilepath, outfi
             and len(domain.split(".")) > 1
         ):
             print(domain)
-            domain = domain.strip()
-            domain = domain.split("//")[-1]
+
             dbdata=read_domain_by_url(domain)
             if dbdata.get('bornat') is  None:
                 continue

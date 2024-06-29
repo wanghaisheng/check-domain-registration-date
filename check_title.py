@@ -262,7 +262,7 @@ if filename and filename.strip():
 
         start=datetime.now()
         inputfilepath=filename + ".csv"
-        logger.add(f"{folder_path}/domain-index-title.log")
+        # logger.add(f"{folder_path}/domain-index-title.log")
         # print(domains)
         outfilepath=inputfilepath.replace('.csv','-titles.csv')
         outfile = Recorder(folder_path+'/'+outfilepath, cache_size=50)

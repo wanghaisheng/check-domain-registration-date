@@ -222,16 +222,17 @@ async def lookup_domain(domain: str,proxy_url: str, semaphore: asyncio.Semaphore
                             # 'raw':rawdata
                             }
                         outfile.add_data(data)
+
+
+                        # Domain=
+                        new_domain = Domain(
+                            url=domain,
+                        bornat=creation_date_str)
+                        add_domain(new_domain)                        
                 else:
                     print('status 200 but without results key',data)
 
 
-
-                    # Domain=
-                    new_domain = Domain(
-                        url=domain,
-                    bornat=creation_date_str)
-                    add_domain(new_domain)
 
 
                 return True

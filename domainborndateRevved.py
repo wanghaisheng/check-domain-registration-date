@@ -23,7 +23,7 @@ except ImportError:
 import aiohttp
 import asyncio
 from contextlib import asynccontextmanager
-from dbhelper import add_domain,Domain,read_domain_by_url
+from dbhelper import DatabaseManager
 
 from loguru import logger
 
@@ -106,7 +106,7 @@ async def getSession(proxy_url):
     else:
         session= aiohttp.ClientSession() 
         return session        
-async def lookup_domain_with_retry(domain: str, valid_proxies:list,proxy_url: str, semaphore: asyncio.Semaphore, outfile:Recorder):
+async def lookup_domain_with_retry(domain: str, valid_proxies:list,proxy_url: str, semaphore: asyncio.Semaphore, outfile:Recorder,db_manager):
     retry_count = 0
     while retry_count < MAX_RETRIES:
         if retry_count>0:
@@ -133,7 +133,7 @@ async def lookup_domain_with_retry(domain: str, valid_proxies:list,proxy_url: st
 
         try:
             async with semaphore:
-                result = await lookup_domain(domain, proxy_url,semaphore, outfile)
+                result = await lookup_domain(domain, proxy_url,semaphore, outfile,db_manager)
             if result:
                 if proxy_url and proxy_url not in valid_proxies:
                     valid_proxies.append(proxy_url)
@@ -155,7 +155,7 @@ async def lookup_domain_with_retry(domain: str, valid_proxies:list,proxy_url: st
     
     logger.error(f"Max retries reached for domain: {domain}")
     return None    
-async def lookup_domain(domain: str,proxy_url: str, semaphore: asyncio.Semaphore, outfile:Recorder):
+async def lookup_domain(domain: str,proxy_url: str, semaphore: asyncio.Semaphore, outfile:Recorder,db_manager):
     '''
     Looks up a domain using the RDAP protocol.
     
@@ -230,10 +230,10 @@ async def lookup_domain(domain: str,proxy_url: str, semaphore: asyncio.Semaphore
 
 
                         # Domain=
-                        new_domain = Domain(
+                        new_domain = db_manager.Domain(
                             url=domain,
                         bornat=creation_date_str)
-                        add_domain(new_domain)       
+                        db_manager.add_domain(new_domain)       
                         return True                 
                 else:
                     print('status 200 but without results key',data)
@@ -306,7 +306,7 @@ def cleandomain(domain):
 # To run the async function, you would do the following in your main code or script:
 # asyncio.run(test_proxy('your_proxy_url_here'))
 
-async def process_domains_revv(inputfilepath,colname,outfilepath,outfile,counts=0):
+async def process_domains_revv(inputfilepath,colname,outfilepath,outfile,counts,db_manager):
 
 
     
@@ -349,7 +349,7 @@ async def process_domains_revv(inputfilepath,colname,outfilepath,outfile,counts=
             print(domain)
 
 
-            dbdata=read_domain_by_url(domain)
+            dbdata=db_manager.read_domain_by_url(domain)
             if dbdata and dbdata.bornat is  None:
                 continue
             proxy=None
@@ -359,7 +359,7 @@ async def process_domains_revv(inputfilepath,colname,outfilepath,outfile,counts=
             if tld:
 
                 try:
-                    task = asyncio.create_task(lookup_domain_with_retry(domain,[],proxy, semaphore, outfile))
+                    task = asyncio.create_task(lookup_domain_with_retry(domain,[],proxy, semaphore, outfile,db_manager))
                     # Ensure the semaphore is released even if the task fails
                     task.add_done_callback(lambda t: semaphore.release())
                     # print('done', url)

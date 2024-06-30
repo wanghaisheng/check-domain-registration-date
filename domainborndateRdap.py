@@ -11,7 +11,7 @@ from datetime import datetime
 import pandas as pd
 from DataRecorder import Recorder
 from contextlib import asynccontextmanager
-from dbhelper import add_domain,Domain,read_domain_by_url
+from dbhelper import DatabaseManager
 
 # try:
 #     import aiofiles
@@ -271,10 +271,10 @@ async def lookup_domain_rdap(domain: str,proxy_url: str, semaphore: asyncio.Sema
                         # 'raw':rawdata
                         }
                     outfile.add_data(data)
-                    new_domain = Domain(
+                    new_domain = DatabaseManager.Domain(
                         url=domain,
                     bornat=creation_date_str)
-                    add_domain(new_domain)
+                    DatabaseManager.add_domain(new_domain)
 
                 logger.info(f'{GREEN}SUCCESS {GREY}| {BLUE}{response.status} {GREY}| {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain}{GREEN}')
                 return True
@@ -388,7 +388,7 @@ async def process_domains_rdap(inputfilepath,colname,outfilepath,outfile,failedf
         
             logger.info(domain)
 
-            dbdata=read_domain_by_url(domain)
+            dbdata=DatabaseManager.read_domain_by_url(domain)
             if dbdata and dbdata.bornat is  None:
                 continue
 

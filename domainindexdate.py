@@ -10,7 +10,6 @@ from datetime import datetime
 
 import pandas as pd
 from DataRecorder import Recorder
-from dbhelper import add_domain,Domain,read_domain_by_url
 
 # try:
 #     import aiofiles
@@ -134,6 +133,7 @@ async def lookup_domain_with_retry(
     proxy_url: str,
     semaphore: asyncio.Semaphore,
     outfile: Recorder,
+    db_manager
 ):
     retry_count = 0
     while retry_count < MAX_RETRIES:
@@ -163,7 +163,7 @@ async def lookup_domain_with_retry(
         try:
             async with semaphore:
                 result = await asyncio.wait_for(
-                    lookup_domain(domain, proxy_url, semaphore, outfile), timeout=30
+                    lookup_domain(domain, proxy_url, semaphore, outfile,db_manager), timeout=30
                 )
             if result:
                 if proxy_url and proxy_url not in valid_proxies:
@@ -191,7 +191,7 @@ from bs4 import BeautifulSoup
 
 
 async def lookup_domain(
-    domain: str, proxy_url: str, semaphore: asyncio.Semaphore, outfile: Recorder
+    domain: str, proxy_url: str, semaphore: asyncio.Semaphore, outfile: Recorder,db_manager
 ):
     """
     Looks up a domain using the RDAP protocol.
@@ -266,13 +266,13 @@ async def lookup_domain(
 
 
                         # Domain=
-                        new_domain = Domain(
+                        new_domain = db_manager.Domain(
                             url=domain,tld=get_tld(domain),
                         title=None,
                         indexat=r[-1] or None,
                         des=None,
                         bornat=None)
-                        add_domain(new_domain)
+                        db_manager.add_domain(new_domain)
 
 
 
@@ -350,7 +350,7 @@ def cleandomain(domain):
         domain = domain.rstrip("/")
     return domain
 
-async def process_domains_indexdate(inputfilepath, domainkey, outfilepath, outfile,counts=0):
+async def process_domains_indexdate(inputfilepath, domainkey, outfilepath, outfile,counts,db_manager):
 
     semaphore = asyncio.Semaphore(500)
     df = pd.read_csv(inputfilepath)
@@ -388,7 +388,7 @@ async def process_domains_indexdate(inputfilepath, domainkey, outfilepath, outfi
         ):
             print(domain)
 
-            dbdata=read_domain_by_url(domain)
+            dbdata=db_manager.read_domain_by_url(domain)
             if dbdata and dbdata.indexat is  None:
                 continue
             proxy = None
@@ -404,7 +404,7 @@ async def process_domains_indexdate(inputfilepath, domainkey, outfilepath, outfi
 
                 try:
                     task = asyncio.create_task(
-                        lookup_domain_with_retry(domain, [], proxy, semaphore, outfile)
+                        lookup_domain_with_retry(domain, [], proxy, semaphore, outfile,db_manager)
                     )
                     # Ensure the semaphore is released even if the task fails
                     task.add_done_callback(lambda t: semaphore.release())

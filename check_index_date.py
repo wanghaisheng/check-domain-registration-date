@@ -13,6 +13,7 @@ import asyncio
 from loguru import logger
 from domainindexdate import process_domains_indexdate
 
+from dbhelper import DatabaseManager
 
 
 # 创建一个新的列"store url"，并初始化为None
@@ -271,7 +272,9 @@ if filename and filename.strip():
         # print(domains)
         outfilepath=inputfilepath.replace('.csv','-index.csv')
         outfile = Recorder(folder_path+'/'+outfilepath, cache_size=50)
-        asyncio.run(process_domains_indexdate(inputfilepath,colname,outfilepath,outfile,counts))
+        db_manager = DatabaseManager()
+
+        asyncio.run(process_domains_indexdate(inputfilepath,colname,outfilepath,outfile,counts,db_manager))
         end=datetime.now()
         print('costing',end-start)
         outfile.record()

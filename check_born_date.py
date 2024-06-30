@@ -12,6 +12,7 @@ from datetime import datetime
 import asyncio
 from loguru import logger
 from domainborndateRevved import process_domains_revv
+from dbhelper import DatabaseManager
 
 
 
@@ -263,6 +264,7 @@ except:
 if filename and filename.strip():
     if colname and colname.strip():
 
+        db_manager = DatabaseManager()
 
         start=datetime.now()
         inputfilepath=filename + ".csv"
@@ -270,7 +272,7 @@ if filename and filename.strip():
         # print(domains)
         outfilepath=inputfilepath.replace('.csv','-index.csv')
         outfile = Recorder(folder_path+'/'+outfilepath, cache_size=50)
-        asyncio.run(process_domains_revv(inputfilepath,colname,outfilepath,outfile,counts))
+        asyncio.run(process_domains_revv(inputfilepath,colname,outfilepath,outfile,counts,db_manager))
         end=datetime.now()
         print('costing',end-start)
         outfile.record()

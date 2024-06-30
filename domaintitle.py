@@ -155,7 +155,7 @@ async def lookup_domain_with_retry(domain: str, valid_proxies:list,proxy_url: st
                 except Exception as e:
                     logger.error('get proxy error:{} use backup',e)
             if pro_str:
-                proxy_url = "http://{}".format(pro_str)        
+                proxy_url = "https://{}".format(pro_str)        
         logger.info('current proxy{}',proxy_url)
 
         try:
@@ -316,7 +316,7 @@ def cleandomain(domain):
 async def process_domains_title(domains,outfile,counts,db_manager):
 
     
-    semaphore = asyncio.Semaphore(500)
+    semaphore = asyncio.Semaphore(25)
 
     tasks = []
 

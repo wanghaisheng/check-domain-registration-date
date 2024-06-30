@@ -4,6 +4,9 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 from dotenv import load_dotenv
 from sqlalchemy.engine.reflection import Inspector
 import os
+import logging
+logging.basicConfig(level='error')
+logging.getLogger('sqlalchemy').setLevel('error')
 load_dotenv()
 
 # Get Turso connection details from environment variables

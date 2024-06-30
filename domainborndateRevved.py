@@ -138,10 +138,14 @@ async def lookup_domain_with_retry(domain: str, valid_proxies:list,proxy_url: st
                 if proxy_url and proxy_url not in valid_proxies:
                     valid_proxies.append(proxy_url)
                 return result
+        except asyncio.TimeoutError:
+            logger.error(f"Timeout occurred for domain: {domain} with proxy: {proxy_url}")
+            if proxy_url and proxy_url  in valid_proxies:
+                valid_proxies.remove(proxy_url)        
         except Exception as e:
-            logger.error(f"Error occurred: {e} for {domain}")
-            if proxy_url in valid_proxies:
-                valid_proxies.remove(proxy_url)
+            logger.error(f"Error occurred: {e}")
+            if proxy_url and proxy_url  in valid_proxies:
+                valid_proxies.remove(proxy_url)        
         
         retry_count += 1
         if retry_count < MAX_RETRIES:

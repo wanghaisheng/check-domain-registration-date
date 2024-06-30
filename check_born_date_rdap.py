@@ -268,9 +268,13 @@ if filename and filename.strip():
         inputfilepath=filename + ".csv"
         # logger.add(f"{folder_path}/domain-index-ai.log")
         # print(domains)
-        outfilepath=inputfilepath.replace('.csv','-index.csv')
+        outfilepath=inputfilepath.replace('.csv','-born-rdap.csv')
         outfile = Recorder(folder_path+'/'+outfilepath, cache_size=50)
-        asyncio.run(process_domains_revv(inputfilepath,colname,outfilepath,outfile,counts))
+        failedfilepath=inputfilepath.replace('.csv','-born-rdap-error.csv')
+        failedfile = Recorder(folder_path+'/'+failedfilepath, cache_size=50)
+
+        
+        asyncio.run(process_domains_revv(inputfilepath,colname,outfilepath,outfile,failedfile,counts))
         end=datetime.now()
         print('costing',end-start)
         outfile.record()

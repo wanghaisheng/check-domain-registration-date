@@ -11,7 +11,7 @@ from DataRecorder import Recorder
 from datetime import datetime
 import asyncio
 from loguru import logger
-from domainborndateRevved import process_domains_revv
+from domainborndateRdap import process_domains_rdap
 from dbhelper import DatabaseManager
 
 
@@ -264,8 +264,8 @@ except:
 if filename and filename.strip():
     if colname and colname.strip():
 
-        db_manager = DatabaseManager()
 
+            
         start=datetime.now()
         inputfilepath=filename + ".csv"
         # logger.add(f"{folder_path}/domain-index-ai.log")
@@ -275,8 +275,17 @@ if filename and filename.strip():
         failedfilepath=inputfilepath.replace('.csv','-born-rdap-error.csv')
         failedfile = Recorder(folder_path+'/'+failedfilepath, cache_size=50)
 
-        
-        asyncio.run(process_domains_revv(inputfilepath,colname,outfilepath,outfile,failedfile,counts,db_manager))
+        df = pd.read_csv(inputfilepath, encoding="ISO-8859-1")
+        domains=df[colname].tolist()
+        db_manager = DatabaseManager()
+        dbdata=db_manager.read_domain_all()
+        donedomains=[]
+        for i in dbdata:
+            if i.bornat is not None:
+                donedomains.append(i.url)
+        domains=[i for i in domains if i not in donedomains]
+       
+        asyncio.run(process_domains_rdap(domains,outfile,counts,db_manager))
         end=datetime.now()
         print('costing',end-start)
         outfile.record()

@@ -101,13 +101,12 @@ async def get_proxy():
 async def get_proxy_proxypool():
     async with aiohttp.ClientSession() as session:
 
-        if proxy is None:
-            try:
-                async with session.get('https://proxypool.scrape.center/random') as response:
-                    proxy = await response.text()
-                    return proxy
-            except:
-                return None
+        try:
+            async with session.get('https://proxypool.scrape.center/random') as response:
+                proxy = await response.text()
+                return proxy
+        except:
+            return None
 from aiohttp_socks import ProxyType, ProxyConnector, ChainProxyConnector
 
 async def getSession(proxy_url):
@@ -311,30 +310,10 @@ def cleandomain(domain):
     if domain.endswith("/"):
         domain = domain.rstrip("/")
     return domain
-async def process_domains_title(inputfilepath,colname,outfilepath,outfile,counts,db_manager):
+async def process_domains_title(domains,outfile,counts,db_manager):
 
     
     semaphore = asyncio.Semaphore(500)
-    df = pd.read_csv(inputfilepath, encoding="ISO-8859-1")
-
-    # df = df.head(1)
-    # domains = df[df["type"] == "aitools"]["domains"].tolist()
-    # domains=df['Keyword'].tolist()
-    domains=df[colname].tolist()
-
-
-    # outfilefailedpath=inputfilepath.replace('.csv','-result-failed.csv')
-    
-    # outfilefailed = Recorder(outfilefailedpath, cache_size=500)
-
-    donedomains=[]
-    if os.path.exists(outfilepath):
-        df = pd.read_csv(outfilepath)
-        # print(df.head(1))
-        donedomains=df['domain'].tolist()
-    # domains=[d for d in domains if d not in donedomains]
-    # print(len(domains))
-
 
     tasks = []
 
@@ -347,7 +326,7 @@ async def process_domains_title(inputfilepath,colname,outfilepath,outfile,counts
         domain=cleandomain(domain)
 
 
-        if domain and domain not in  donedomains and type(domain)==str and "." in domain and len(domain.split('.'))>1:
+        if domain and type(domain)==str and "." in domain and len(domain.split('.'))>1:
 
 
             proxy=None

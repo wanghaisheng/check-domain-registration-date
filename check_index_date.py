@@ -272,9 +272,18 @@ if filename and filename.strip():
         # print(domains)
         outfilepath=inputfilepath.replace('.csv','-index.csv')
         outfile = Recorder(folder_path+'/'+outfilepath, cache_size=50)
+        df = pd.read_csv(inputfilepath, encoding="ISO-8859-1")
+        domains=df[colname].tolist()
         db_manager = DatabaseManager()
-
-        asyncio.run(process_domains_indexdate(inputfilepath,colname,outfilepath,outfile,counts,db_manager))
+        dbdata=db_manager.read_domain_all()
+        donedomains=[]
+        for i in dbdata:
+            if i.bornat is not None:
+                donedomains.append(i.url)
+        domains=[i for i in domains if i not in donedomains]
+       
+       
+        asyncio.run(process_domains_indexdate(domains,outfile,counts,db_manager))
         end=datetime.now()
         print('costing',end-start)
         outfile.record()

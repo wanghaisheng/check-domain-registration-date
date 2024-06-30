@@ -78,13 +78,12 @@ async def get_proxy():
 async def get_proxy_proxypool():
     async with aiohttp.ClientSession() as session:
 
-        if proxy is None:
-            try:
-                async with session.get('https://proxypool.scrape.center/random') as response:
-                    proxy = await response.text()
-                    return proxy
-            except:
-                return None
+        try:
+            async with session.get('https://proxypool.scrape.center/random') as response:
+                proxy = await response.text()
+                return proxy
+        except:
+            return None
 from aiohttp import BasicAuth
 
 class RdapRequestAuth:
@@ -140,7 +139,7 @@ async def getSession(proxy_url):
         session= aiohttp.ClientSession() 
         return session            
 
-async def lookup_domain_with_retry(domain: str, valid_proxies:list,proxy_url: str, semaphore: asyncio.Semaphore, outfile:Recorder,failedfile:Recorder):
+async def lookup_domain_with_retry(domain: str, valid_proxies:list,proxy_url: str, semaphore: asyncio.Semaphore, outfile:Recorder,db_manager):
     retry_count = 0
     while retry_count < MAX_RETRIES:
         if retry_count>0:
@@ -166,7 +165,7 @@ async def lookup_domain_with_retry(domain: str, valid_proxies:list,proxy_url: st
 
         try:
             async with semaphore:
-                result = await asyncio.wait_for(lookup_domain_rdap(domain, proxy_url, semaphore, outfile,failedfile), timeout=30)
+                result = await asyncio.wait_for(lookup_domain_rdap(domain, proxy_url, semaphore, outfile,db_manager), timeout=30)
             if result:
                 if proxy_url and proxy_url not in valid_proxies:
                     valid_proxies.append(proxy_url)
@@ -187,17 +186,11 @@ async def lookup_domain_with_retry(domain: str, valid_proxies:list,proxy_url: st
         #     await asyncio.sleep(delay)
     
     logger.error(f"Max retries reached for domain: {domain}")
-    data={'domain':domain,
-        # 'rank':rankno,
-        "born":'',
-        # 'raw':rawdata
-        }
-    failedfile.add_data(data)
 
     return None    
 
 
-async def lookup_domain_rdap(domain: str,proxy_url: str, semaphore: asyncio.Semaphore, outfile:Recorder,failedfile:Recorder):
+async def lookup_domain_rdap(domain: str,proxy_url: str, semaphore: asyncio.Semaphore, outfile:Recorder,db_manager):
     '''
     Looks up a domain using the RDAP protocol.
     
@@ -271,10 +264,10 @@ async def lookup_domain_rdap(domain: str,proxy_url: str, semaphore: asyncio.Sema
                         # 'raw':rawdata
                         }
                     outfile.add_data(data)
-                    new_domain = DatabaseManager.Domain(
+                    new_domain = db_manager.Domain(
                         url=domain,
                     bornat=creation_date_str)
-                    DatabaseManager.add_domain(new_domain)
+                    db_manager.add_domain(new_domain)
 
                 logger.info(f'{GREEN}SUCCESS {GREY}| {BLUE}{response.status} {GREY}| {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain}{GREEN}')
                 return True
@@ -296,12 +289,7 @@ async def lookup_domain_rdap(domain: str,proxy_url: str, semaphore: asyncio.Sema
             if session:
                 await session.close()
 
-            data={'domain':domain,
-                # 'rank':rankno,
-                "born":'',
-                # 'raw':rawdata
-                }
-            failedfile.add_data(data)
+
 @asynccontextmanager
 async def aiohttp_session(url):
     async with aiohttp.ClientSession() as session:
@@ -340,38 +328,13 @@ def cleandomain(domain):
     if domain.endswith("/"):
         domain = domain.rstrip("/")
     return domain
-async def process_domains_rdap(inputfilepath,colname,outfilepath,outfile,failedfile,counts=0):
+async def process_domains_rdap(domain,outfile,counts,db_manager):
     
     semaphore = asyncio.Semaphore(50)
 
-    df = pd.read_csv(inputfilepath
-                    #  , encoding="ISO-8859-1"
-                     )
 
-    # df = df.head(1)
-    # domains = df[df["type"] == "aitools"]["domains"].tolist()
-    # domains=df['Keyword'].tolist()
-    domains=df[colname].tolist()
     domains=list(set(domains))
-    
-
-
-    
-    logger.info('total domains count:{}',len(domains))
-
-    donedomains=[]
-    if os.path.exists(outfilepath):
-        df = pd.read_csv(outfilepath)
-        # logger.info(df.head(1))
-        donedomains=df['domain'].tolist()
-        donedomains=list(set(donedomains))
-
-    logger.info('done domains count:{}',len(donedomains))
-
-    # domains=[d for d in domains if d not in donedomains]
-
-
-
+ 
 
 
     await    fetch_rdap_servers()
@@ -388,19 +351,17 @@ async def process_domains_rdap(inputfilepath,colname,outfilepath,outfile,failedf
         
             logger.info(domain)
 
-            dbdata=DatabaseManager.read_domain_by_url(domain)
-            if dbdata and dbdata.bornat is  None:
-                continue
+
 
             tld = get_tld(domain)
             proxy=None
 
             # proxy=random.choice(valid_proxies)
-            if domain and domain not in  donedomains and tld not in ['ai']:
+            if domain  and tld not in ['ai']:
                 # logger.info('add',domain)
 
                 try:
-                    task = asyncio.create_task(lookup_domain_with_retry(domain,[], proxy, semaphore, outfile,failedfile))
+                    task = asyncio.create_task(lookup_domain_with_retry(domain,[], proxy, semaphore, outfile,db_manager))
                     # Ensure the semaphore is released even if the task fails
                     task.add_done_callback(lambda t: semaphore.release())
                     # logger.info('done', url)
@@ -417,7 +378,6 @@ async def process_domains_rdap(inputfilepath,colname,outfilepath,outfile,failedf
         await task
 
     outfile.record()
-    failedfile.record()
 # start=datetime.now()
 # logger.add(f'domain-born-rdap.log')
 # domainkey='domain'

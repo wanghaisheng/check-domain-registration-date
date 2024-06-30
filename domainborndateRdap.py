@@ -74,7 +74,7 @@ async def get_proxy():
                 proxy=data['proxy']
                 return proxy
         except:
-            pass
+            return None
 async def get_proxy_proxypool():
     async with aiohttp.ClientSession() as session:
 
@@ -328,7 +328,7 @@ def cleandomain(domain):
     if domain.endswith("/"):
         domain = domain.rstrip("/")
     return domain
-async def process_domains_rdap(domain,outfile,counts,db_manager):
+async def process_domains_rdap(domains,outfile,counts,db_manager):
     
     semaphore = asyncio.Semaphore(50)
 

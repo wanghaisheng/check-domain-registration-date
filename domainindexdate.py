@@ -90,7 +90,7 @@ async def get_proxy():
                 proxy=data['proxy']
                 return proxy
         except:
-            pass
+            return None
 async def get_proxy_proxypool():
     async with aiohttp.ClientSession() as session:
 

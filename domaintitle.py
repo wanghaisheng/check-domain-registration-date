@@ -92,9 +92,11 @@ async def get_proxy():
     proxy=None
     async with aiohttp.ClientSession() as session:
         try:
-            async with session.get('http://demo.spiderpy.cn/get') as response:
+            async with session.get('http://demo.spiderpy.cn/get?https') as response:
                 data = await response.json()
                 proxy=data['proxy']
+                proxy=f'https://{proxy}'
+
                 return proxy
         except:
             return None
@@ -102,8 +104,9 @@ async def get_proxy_proxypool():
     async with aiohttp.ClientSession() as session:
 
         try:
-            async with session.get('https://proxypool.scrape.center/random') as response:
+            async with session.get('https://proxypool.scrape.center/random?https') as response:
                 proxy = await response.text()
+                proxy=f'https://{proxy}'
                 return proxy
         except:
             return None

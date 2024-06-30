@@ -69,9 +69,11 @@ async def get_proxy():
     proxy=None
     async with aiohttp.ClientSession() as session:
         try:
-            async with session.get('http://demo.spiderpy.cn/get') as response:
+            async with session.get('http://demo.spiderpy.cn/get?https') as response:
                 data = await response.json()
                 proxy=data['proxy']
+                proxy=f'https://{proxy}'
+
                 return proxy
         except:
             return None
@@ -79,8 +81,9 @@ async def get_proxy_proxypool():
     async with aiohttp.ClientSession() as session:
 
         try:
-            async with session.get('https://proxypool.scrape.center/random') as response:
+            async with session.get('https://proxypool.scrape.center/random?https') as response:
                 proxy = await response.text()
+                proxy=f'https://{proxy}'
                 return proxy
         except:
             return None
@@ -330,7 +333,7 @@ def cleandomain(domain):
     return domain
 async def process_domains_rdap(domains,outfile,counts,db_manager):
     
-    semaphore = asyncio.Semaphore(50)
+    semaphore = asyncio.Semaphore(25)
 
 
     domains=list(set(domains))
@@ -341,7 +344,6 @@ async def process_domains_rdap(domains,outfile,counts,db_manager):
     # logger.info(RDAP_SERVERS)
 
     tasks = []
-    domains=list(set(domains))
     if counts!=0:
         domains=domains[:counts]
     for domain in domains:

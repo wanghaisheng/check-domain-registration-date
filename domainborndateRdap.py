@@ -366,6 +366,8 @@ async def process_domains_rdap(domains,outfile,counts,db_manager):
                 # logger.info('add',domain)
 
                 try:
+                    await semaphore.acquire()
+
                     task = asyncio.create_task(lookup_domain_with_retry(domain,[], proxy, semaphore, outfile,db_manager))
                     # Ensure the semaphore is released even if the task fails
                     task.add_done_callback(lambda t: semaphore.release())

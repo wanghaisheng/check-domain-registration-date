@@ -120,6 +120,7 @@ class DatabaseManager:
                     # Add new domain
                     session.add(new_domain_data)
                 session.commit()
+                print('add domain ok')
             except Exception as e:
                 print(f"An error occurred: {e}")
             finally:

@@ -355,49 +355,23 @@ def cleandomain(domain):
         domain = domain.rstrip("/")
     return domain
 
-async def process_domains_indexdate(domains, outfile,counts,db_manager):
+async def process_domains_indexdate(domains, outfile,counts,db_manager,semaphore):
+    async with semaphore:
+        tasks = []
+        domains = list(set(domains))  # Ensure uniqueness of domains
+        if counts != 0:
+            domains = domains[:counts]
 
-    semaphore = asyncio.Semaphore(25)
+        for domain in domains:
+            domain = cleandomain(domain)
 
-
-
-    tasks = []
-    domains = list(set(domains))
-    if counts!=0:
-        domains=domains[:counts]
-    for domain in domains:
-        domain=cleandomain(domain)
-
-        if (
-            domain
-            and type(domain) == str
-            and "." in domain
-            and len(domain.split(".")) > 1
-        ):
-            print(domain)
-
-            proxy = None
-
-            # if len(valid_proxies)>1:
-            #     proxy=random.choice(valid_proxies)
-            #     print('pick proxy',proxy)
-
-            # proxy = "socks5h://127.0.0.1:1080"
-            tld = get_tld(domain)
-
-            if tld:
-
+            if domain and isinstance(domain, str) and "." in domain and len(domain.split(".")) > 1:
                 try:
-                    await semaphore.acquire()
-
                     task = asyncio.create_task(
-                        lookup_domain_with_retry(domain, [], proxy, semaphore, outfile,db_manager)
+                        lookup_domain_with_retry(domain, [], None, semaphore, outfile, db_manager)
                     )
-                    # Ensure the semaphore is released even if the task fails
-                    task.add_done_callback(lambda t: semaphore.release())
-                    # print('done', url)
                     tasks.append(task)
-
                 except Exception as e:
-                    print(f"{RED}An error occurred while processing {domain}: {e}")
-    await asyncio.gather(*tasks)
+                    logger.error(f"An error occurred while processing {domain}: {e}")
+
+        await asyncio.gather(*tasks)

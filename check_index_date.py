@@ -278,6 +278,7 @@ async def main():
             db_manager = DatabaseManager()
             print(f'start to done domains :{len(domains)}')
             dbdata = db_manager.read_domain_all()
+            semaphore = asyncio.Semaphore(10)  # Adjust the concurrency limit as per your needs
 
             donedomains=[]
             for i in dbdata:
@@ -286,7 +287,7 @@ async def main():
             domains=[i for i in domains if i not in donedomains]
         
             print(f'end to done domains :{len(domains)}--{len(donedomains)}')
-            await process_domains_indexdate(domains,outfile,counts,db_manager)
+            await process_domains_indexdate(domains,outfile,counts,db_manager,semaphore)
             end=datetime.now()
             print('costing',end-start)
             outfile.record()

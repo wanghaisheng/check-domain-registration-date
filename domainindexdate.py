@@ -166,7 +166,7 @@ async def lookup_domain_with_retry(
 
             try:
                 result = await asyncio.wait_for(
-                    lookup_domain(domain, proxy_url, semaphore, outfile,db_manager), timeout=30
+                    lookup_domain(domain, proxy_url, semaphore, outfile,db_manager), timeout=10
                 )
                 if result:
                     if proxy_url and proxy_url not in valid_proxies:
@@ -180,7 +180,8 @@ async def lookup_domain_with_retry(
                 logger.error(f"Error occurred: {e}")
                 if proxy_url and proxy_url  in valid_proxies:
                     valid_proxies.remove(proxy_url)        
-            retry_count += 1
+            finally:
+                retry_count += 1
             # if retry_count < MAX_RETRIES:
             #     delay = min(INITIAL_DELAY * (2 ** retry_count), MAX_DELAY)
             #     logger.info(f"Retrying in {delay} seconds with proxy {proxy_url}...")

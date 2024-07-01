@@ -387,6 +387,8 @@ async def process_domains_indexdate(domains, outfile,counts,db_manager):
             if tld:
 
                 try:
+                    await semaphore.acquire()
+
                     task = asyncio.create_task(
                         lookup_domain_with_retry(domain, [], proxy, semaphore, outfile,db_manager)
                     )

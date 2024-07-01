@@ -178,7 +178,7 @@ async def lookup_domain_with_retry(domain: str, valid_proxies:list,proxy_url: st
                 except Exception as e:
                     logger.error('get proxy error:{} use backup',e)
                     return 
-        logger.info('current proxy{}',proxy_url)
+        logger.info(f"{retry_count} retry current proxy {proxy_url}")
 
         try:
             async with semaphore:

@@ -134,6 +134,7 @@ async def lookup_domain_with_retry(domain: str, valid_proxies:list,proxy_url: st
                 except Exception as e:
                     logger.error('get proxy error:{} use backup',e)
                     return     
+        logger.info(f"{retry_count} retry current proxy {proxy_url}")
 
         try:
             async with semaphore:
@@ -309,7 +310,7 @@ def cleandomain(domain):
 # To run the async function, you would do the following in your main code or script:
 # asyncio.run(test_proxy('your_proxy_url_here'))
 
-async def process_domains_revv(domains,outfile,counts,db_manager):
+async def process_domains_revv(domains,outfile,counts,db_manager,semaphore):
 
 
     

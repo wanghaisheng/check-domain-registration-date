@@ -273,7 +273,7 @@ async def lookup_domain_rdap(domain: str,proxy_url: str, semaphore: asyncio.Sema
                     bornat=creation_date_str)
                     db_manager.add_domain(new_domain)
 
-                    print(f'add data ok,{creation_date_str}-{domain}')
+                    logger.info(f'add data ok,{creation_date_str}-{domain}')
 
                 logger.info(f'{GREEN}SUCCESS {GREY}| {BLUE}{response.status} {GREY}| {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain}{GREEN}')
                 return True

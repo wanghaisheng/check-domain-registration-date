@@ -3,9 +3,9 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.engine.reflection import Inspector
 from dotenv import load_dotenv
 import os
-
+import async_timeout
 load_dotenv()
-
+import asyncio
 # Get Turso connection details from environment variables
 TURSO_URL = os.getenv("TURSO_URL")
 TURSO_TOKEN = os.getenv("TURSO_TOKEN")
@@ -142,6 +142,30 @@ class DatabaseManager:
             domain = session.query(self.Domain).filter(self.Domain.url == url).first()
             session.close()
             return domain       
+
+
+    async def read_domain_all_async(self, timeout=30):
+        domains = []
+
+        try:
+            async with async_timeout.timeout(timeout):
+                with self.Session() as session:
+
+                    domains = session.query(self.Domain).all()
+                    # for user in users:
+                        # print(f"Domain: {user.name}, Email: {user.email}")
+
+                    # Close the session
+                    session.close()    
+                    
+        except asyncio.TimeoutError:
+            print(f"Query timed out after {timeout} seconds")
+            # Handle timeout error here if needed
+        except Exception as e:
+            print(f"Error fetching data: {e}")
+            # Handle other exceptions
+
+        return domains
     def read_domain_all(self):
         # Query the database
         with self.Session() as session:

@@ -277,7 +277,7 @@ if filename and filename.strip():
         db_manager = DatabaseManager()
         print(f'start to done domains :{len(domains)}')
 
-        dbdata=db_manager.read_domain_all()
+        dbdata=db_manager.read_domain_all_async(timeout=30)
         donedomains=[]
         for i in dbdata:
             if i.indexat is not None:

@@ -275,14 +275,16 @@ if filename and filename.strip():
         df = pd.read_csv(inputfilepath, encoding="ISO-8859-1")
         domains=df[colname].tolist()
         db_manager = DatabaseManager()
-        dbdata=db_manager.read_domain_all()
+        print('start to done domains ')
+
+        dbdata=db_manager.read_domain_all_urls()
         donedomains=[]
         for i in dbdata:
             if i.indexat is not None:
                 donedomains.append(i.url)
         domains=[i for i in domains if i not in donedomains]
        
-       
+        print('done domains ')
         asyncio.run(process_domains_indexdate(domains,outfile,counts,db_manager))
         end=datetime.now()
         print('costing',end-start)

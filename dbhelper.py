@@ -153,3 +153,19 @@ class DatabaseManager:
             # Close the session
             session.close()    
             return domains
+    def read_domain_all_urls(self):
+        # Initialize an empty list to store the queried names
+        domain_names = []
+
+        # Query the database
+        with self.Session() as session:
+            # Query only the 'name' column from the Domain table
+            query_result = session.query(self.Domain.url).all()
+            
+            # Extract names from the query result
+            domain_names = [name for (name,) in query_result]
+            
+            # No need to manually close the session when using 'with' statement
+
+        # 'domain_names' contains only the 'name' column values
+        return domain_names

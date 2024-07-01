@@ -277,7 +277,7 @@ async def main():
             domains=df[colname].tolist()
             db_manager = DatabaseManager()
             print(f'start to done domains :{len(domains)}')
-            dbdata = await db_manager.read_domain_all()
+            dbdata = db_manager.read_domain_all()
 
             donedomains=[]
             for i in dbdata:

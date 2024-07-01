@@ -163,6 +163,7 @@ async def lookup_domain_with_retry(
                         logger.error('get proxy error:{} use backup',e)
                         return 
             logger.info(f"{retry_count} retry current proxy {proxy_url}")
+            proxy_url=None
 
             try:
                 result = await asyncio.wait_for(

@@ -167,10 +167,11 @@ async def lookup_domain_with_retry(domain: str, valid_proxies:list,proxy_url: st
                 except Exception as e:
                     logger.error('get proxy error:{} use backup',e)
         logger.info(f"{retry_count} retry current proxy {proxy_url}")
+        proxy_url=None
 
         try:
             async with semaphore:
-                result = await asyncio.wait_for(lookup_domain_rdap(domain, proxy_url, semaphore, outfile,db_manager), timeout=30)
+                result = await asyncio.wait_for(lookup_domain_rdap(domain, proxy_url, semaphore, outfile,db_manager), timeout=10)
                 if result:
                     if proxy_url and proxy_url not in valid_proxies:
                         valid_proxies.append(proxy_url)

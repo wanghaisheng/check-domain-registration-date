@@ -148,9 +148,7 @@ async def lookup_domain_with_retry(domain: str, valid_proxies:list,proxy_url: st
                     if pro_str is None:
                     
                         pro_str=await get_proxy_proxypool()
-                    if pro_str is None :
-                        # proxy_url='http://127.0.0.1:1080'
-                        break
+
 
                 except Exception as e:
                     logger.error('get proxy error:{} use backup',e)
@@ -161,10 +159,10 @@ async def lookup_domain_with_retry(domain: str, valid_proxies:list,proxy_url: st
         try:
             async with semaphore:
                 result = await asyncio.wait_for(lookup_domain(domain, proxy_url, semaphore, outfile,db_manager), timeout=30)
-            if result:
-                if proxy_url and proxy_url not in valid_proxies:
-                    valid_proxies.append(proxy_url)
-                return result
+                if result:
+                    if proxy_url and proxy_url not in valid_proxies:
+                        valid_proxies.append(proxy_url)
+                    return result
         except asyncio.TimeoutError:
             logger.error(f"Timeout occurred for domain: {domain} with proxy: {proxy_url}")
             if proxy_url and proxy_url  in valid_proxies:

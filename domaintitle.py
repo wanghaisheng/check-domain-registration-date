@@ -346,6 +346,8 @@ async def process_domains_title(domains,outfile,counts,db_manager,semaphore):
 
         if counts!=0:
             domains=domains[:counts]    
+
+        for domain in domains:
             domain = cleandomain(domain)
 
             if domain and isinstance(domain, str) and "." in domain and len(domain.split(".")) > 1:

@@ -87,7 +87,6 @@ async def fetch_rdap_servers():
                 rdap_url = entry[1][0]
                 for tld in tlds:
                     RDAP_SERVERS[tld] = rdap_url
-
 async def get_proxy():
     proxy=None
     async with aiohttp.ClientSession() as session:
@@ -95,21 +94,26 @@ async def get_proxy():
             async with session.get('http://demo.spiderpy.cn/get?https') as response:
                 data = await response.json()
                 proxy=data['proxy']
-                proxy=f'https://{proxy}'
+                if proxy and 'http' not in proxy:
+                    proxy=f'https://{proxy}'
 
                 return proxy
         except:
             return None
 async def get_proxy_proxypool():
+    proxy=None
+   
     async with aiohttp.ClientSession() as session:
 
         try:
             async with session.get('https://proxypool.scrape.center/random?https') as response:
                 proxy = await response.text()
-                proxy=f'https://{proxy}'
-                return proxy
+                if proxy and 'http' not in proxy:
+                    proxy=f'https://{proxy}'
+                    return proxy
         except:
             return None
+
 from aiohttp_socks import ProxyType, ProxyConnector, ChainProxyConnector
 
 async def getSession(proxy_url):
@@ -143,17 +147,16 @@ async def lookup_domain_with_retry(domain: str, valid_proxies:list,proxy_url: st
                 proxy_url=random.choice(valid_proxies)
             else:
                 try:
-                    pro_str=await get_proxy()
+                    proxy_url=await get_proxy()
 
-                    if pro_str is None:
+                    if proxy_url is None:
                     
-                        pro_str=await get_proxy_proxypool()
+                        proxy_url=await get_proxy_proxypool()
 
 
                 except Exception as e:
                     logger.error('get proxy error:{} use backup',e)
-            if pro_str:
-                proxy_url = "https://{}".format(pro_str)        
+                    return 
         logger.info('current proxy{}',proxy_url)
 
         try:

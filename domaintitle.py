@@ -253,7 +253,7 @@ async def lookup_domain(domain: str,proxy_url: str, semaphore: asyncio.Semaphore
                 return True
             else:
                 logger.warning(f"Non-200 status code: {response.status} for {domain}")
-                raise
+                return False
 
         except asyncio.TimeoutError as e:
             logger.info(f'{RED} TimeoutError {GREY}| --- | {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain} {RED}| {e}{RESET}')

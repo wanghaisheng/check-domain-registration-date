@@ -52,7 +52,7 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 
 # Global variable to store RDAP servers
 RDAP_SERVERS = {}
-def get_title_from_html(html):
+def get_title_from_html_1(html):
     title = 'not content!'
     try:
         title_patten = r'<title>(\s*?.*?\s*?)</title>'
@@ -63,7 +63,18 @@ def get_title_from_html(html):
     except:
         logger.error('cannot find title')
     return title
-def get_des_from_html(html):
+def get_title_from_html(html):
+    title = 'not found'
+    try:
+        title_pattern = r'<title>(.*?)</title>'
+        result = re.search(title_pattern, html, re.IGNORECASE | re.DOTALL)
+        if result:
+            title = result.group(1).strip()
+    except Exception as e:
+        logger.error(f'Error finding title: {e}')
+    return title
+
+def get_des_from_html1(html):
     title = 'not content!'
     try:
         title_patten = r'<meta name="description" content="(\s*?.*?\s*?)/>'
@@ -74,6 +85,16 @@ def get_des_from_html(html):
     except:
         logger.error('cannot find description')
     return title
+def get_des_from_html(html):
+    description = 'not found'
+    try:
+        des_pattern = r'<meta\s+name="description"\s+content="(.*?)"\s*/?>'
+        result = re.search(des_pattern, html, re.IGNORECASE | re.DOTALL)
+        if result:
+            description = result.group(1).strip()
+    except Exception as e:
+        logger.error(f'Error finding description: {e}')
+    return description
 
 
 async def fetch_rdap_servers():

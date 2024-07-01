@@ -271,9 +271,10 @@ async def lookup_domain(domain: str,proxy_url: str, semaphore: asyncio.Semaphore
                     des=des,
                     )
                     db_manager.add_domain(new_domain)
+                    logger.info(f'add data for {domain}')
 
 
-                logger.info(f'{GREEN}SUCCESS {GREY}| {BLUE}{response.status} {GREY}| {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain}{GREEN}')
+                    logger.info(f'{GREEN}SUCCESS {GREY}| {BLUE}{response.status} {GREY}| {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain}{GREEN}')
                 return True
             else:
                 logger.warning(f"Non-200 status code: {response.status} for {domain}")

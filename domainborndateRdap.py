@@ -253,9 +253,7 @@ async def lookup_domain_rdap(domain: str,proxy_url: str, semaphore: asyncio.Sema
 
             # logger.info('url',query_url,'status',response.status)
             if response and response.status == 200:
-                data = await response.json()
-                if data is None:
-                    return False
+
                 rawdata=data
                 print(f'{domain}----{rawdata}')
                 # Locate the specific eventDate

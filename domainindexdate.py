@@ -236,8 +236,8 @@ async def lookup_domain(
                 logger.error(f"Received None as data for {query_url}")
                 return False
             if response.status == 200:
-                data = await response.text()
-                title = get_title_from_html(data)
+
+            
                 soup = BeautifulSoup(data, "html.parser")
 
                 # Find all elements that contain the text 'aaa'
@@ -269,19 +269,18 @@ async def lookup_domain(
                         # Domain=
                         new_domain = db_manager.Domain(
                             url=domain,tld=get_tld(domain),
-                        title=None,
                         indexat=r[-1] or None,
-                        des=None,
-                        bornat=None)
+
+                        )
                         db_manager.add_domain(new_domain)
 
 
 
-
-                logger.info(
-                    f"{GREEN}SUCCESS {GREY}| {BLUE}{response.status} {GREY}| {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain}{GREEN}"
-                )
-                return True
+                        logger.info(f'add data {domain}')
+                        logger.info(
+                            f"{GREEN}SUCCESS {GREY}| {BLUE}{response.status} {GREY}| {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain}{GREEN}"
+                        )
+                        return True
             else:
                 logger.warning(f"Non-200 status code: {response.status} for {domain}")
                 return False

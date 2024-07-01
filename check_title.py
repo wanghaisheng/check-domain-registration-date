@@ -277,7 +277,7 @@ if filename and filename.strip():
         dbdata=db_manager.read_domain_all()
         donedomains=[]
         for i in dbdata:
-            if i.bornat is not None:
+            if i.title is not None and i.des is not None:
                 donedomains.append(i.url)
         domains=[i for i in domains if i not in donedomains]
        

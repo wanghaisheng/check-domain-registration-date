@@ -400,7 +400,4 @@ async def process_domains_indexdate(domains, outfile,counts,db_manager):
 
                 except Exception as e:
                     print(f"{RED}An error occurred while processing {domain}: {e}")
-
-    # Log when the task starts and finishes
-    for task in tasks:
-        await task
+    await asyncio.gather(*tasks)

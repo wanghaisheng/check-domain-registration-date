@@ -313,55 +313,39 @@ async def process_domains_revv(domains,outfile,counts,db_manager):
 
 
     
-    semaphore = asyncio.Semaphore(25)
+    async with semaphore:
 
+        tasks = []
+        domains=list(set(domains))
+        if counts!=0:
+            domains=domains[:counts]    
+        await    fetch_rdap_servers()
 
-    tasks = []
-    domains=list(set(domains))
-    if counts!=0:
-        domains=domains[:counts]    
-    await    fetch_rdap_servers()
+        for domain in domains:
+            domain = cleandomain(domain)
 
-    for domain in domains:
-        
-        domain=cleandomain(domain)
-
-        if domain  and type(domain)==str and "." in domain and len(domain.split('.'))>1:
-            print(domain)
-
-            proxy=None
-
-            tld = get_tld(domain)
-
-            if tld:
-
+            if domain and isinstance(domain, str) and "." in domain and len(domain.split(".")) > 1:
                 try:
-                    task = asyncio.create_task(lookup_domain_with_retry(domain,[],proxy, semaphore, outfile,db_manager))
-                    # Ensure the semaphore is released even if the task fails
-                    task.add_done_callback(lambda t: semaphore.release())
-                    # print('done', url)
+                    task = asyncio.create_task(
+                        lookup_domain_with_retry(domain, [], None, semaphore, outfile, db_manager)
+                    )
                     tasks.append(task)
-
                 except Exception as e:
-                    print(f"{RED}An error occurred while processing {domain}: {e}")
+                    logger.error(f"An error occurred while processing {domain}: {e}")
 
+        await asyncio.gather(*tasks)
 
+    # start=datetime.now()
+    # inputfilepath=r'D:\Download\audio-visual\a_ideas\results-traffic-journey-srcs-rdap-error.csv'
+    # inputfilepath=r'D:\Download\audio-visual\a_ideas\results-traffic-journey-combined-rdap-error.csv'
+    # inputfilepath=r'D:\Download\audio-visual\a_ideas\results-organic-competitors-combined-rdap-error.csv'
+    # # inputfilepath=r'D:\Download\audio-visual\a_ideas\top1000ai.csv'
+    # domainkey='domain'
 
-    # Log when the task starts and finishes
-    for task in tasks:
-        await task
-
-# start=datetime.now()
-# inputfilepath=r'D:\Download\audio-visual\a_ideas\results-traffic-journey-srcs-rdap-error.csv'
-# inputfilepath=r'D:\Download\audio-visual\a_ideas\results-traffic-journey-combined-rdap-error.csv'
-# inputfilepath=r'D:\Download\audio-visual\a_ideas\results-organic-competitors-combined-rdap-error.csv'
-# # inputfilepath=r'D:\Download\audio-visual\a_ideas\top1000ai.csv'
-# domainkey='domain'
-
-# # print(domains)
-# outfilepath=inputfilepath.replace('error.csv','-reved.csv')
-# outfile = Recorder(outfilepath, cache_size=10)
-# asyncio.run(process_domains())
-# end=datetime.now()
-# print('costing',end-start)
-# outfile.record()
+    # # print(domains)
+    # outfilepath=inputfilepath.replace('error.csv','-reved.csv')
+    # outfile = Recorder(outfilepath, cache_size=10)
+    # asyncio.run(process_domains())
+    # end=datetime.now()
+    # print('costing',end-start)
+    # outfile.record()

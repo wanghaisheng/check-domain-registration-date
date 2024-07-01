@@ -337,72 +337,31 @@ def cleandomain(domain):
     if domain.endswith("/"):
         domain = domain.rstrip("/")
     return domain
-async def process_domains_rdap(domains,outfile,counts,db_manager):
+async def process_domains_rdap(domains,outfile,counts,db_manager,semaphore):
     
-    semaphore = asyncio.Semaphore(25)
+    async with semaphore:
 
 
-    domains=list(set(domains))
- 
+        domains=list(set(domains))
+    
 
 
-    await    fetch_rdap_servers()
-    # logger.info(RDAP_SERVERS)
+        await    fetch_rdap_servers()
+        # logger.info(RDAP_SERVERS)
 
-    tasks = []
-    if counts!=0:
-        domains=domains[:counts]
-    for domain in domains:
-        domain=cleandomain(domain)
-        if domain and type(domain)==str and  "." in domain and len(domain.split('.'))>1:
-        # and '//' in domain 
-        
-            logger.info(domain)
+        tasks = []
+        if counts!=0:
+            domains=domains[:counts]
+        for domain in domains:
+            domain = cleandomain(domain)
 
-
-
-            tld = get_tld(domain)
-            proxy=None
-
-            # proxy=random.choice(valid_proxies)
-            if domain  and tld not in ['ai']:
-                # logger.info('add',domain)
-
+            if domain and isinstance(domain, str) and "." in domain and len(domain.split(".")) > 1:
                 try:
-                    await semaphore.acquire()
-
-                    task = asyncio.create_task(lookup_domain_with_retry(domain,[], proxy, semaphore, outfile,db_manager))
-                    # Ensure the semaphore is released even if the task fails
-                    task.add_done_callback(lambda t: semaphore.release())
-                    # logger.info('done', url)
+                    task = asyncio.create_task(
+                        lookup_domain_with_retry(domain, [], None, semaphore, outfile, db_manager)
+                    )
                     tasks.append(task)
-
                 except Exception as e:
-                    logger.info(f"An error occurred while processing {domain}: {e}")
+                    logger.error(f"An error occurred while processing {domain}: {e}")
 
-
-    logger.info('total tasks count:{}',len(tasks))
-
-    # Log when the task starts and finishes
-    for task in tasks:
-        await task
-
-    outfile.record()
-# start=datetime.now()
-# logger.add(f'domain-born-rdap.log')
-# domainkey='domain'
-# domainkey='Destination'
-# domainkey='domain'
-# inputfilepath=r'D:\Download\audio-visual\a_ideas\ai-domain-aval.csv'
-# inputfilepath=r'D:\Download\audio-visual\a_ideas\results-traffic-journey-dest.csv'
-# inputfilepath=r'D:\Download\audio-visual\a_ideas\results-traffic-journey-srcs.csv'
-# # inputfilepath=r'D:\Download\audio-visual\a_ideas\results-traffic-journey-combined.csv'
-# inputfilepath=r'D:\Download\audio-visual\a_ideas\results-organic-competitors-combined.csv'
-# # logger.info(domains)
-# outfilepath=inputfilepath.replace('.csv','-rdap.csv')
-# outfile = Recorder(outfilepath, cache_size=50)
-# failedfile = Recorder(outfilepath.replace('-rdap.csv','-rdap-error.csv'), cache_size=100)
-
-# asyncio.run(process_domains())
-# end=datetime.now()
-# logger.info('Time costing:{}',end-start)
+        await asyncio.gather(*tasks)

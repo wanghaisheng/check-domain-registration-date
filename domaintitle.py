@@ -336,51 +336,27 @@ def cleandomain(domain):
     if domain.endswith("/"):
         domain = domain.rstrip("/")
     return domain
-async def process_domains_title(domains,outfile,counts,db_manager):
+async def process_domains_title(domains,outfile,counts,db_manager,semaphore):
 
     
-    semaphore = asyncio.Semaphore(25)
+    async with semaphore:
+        tasks = []
 
-    tasks = []
+        domains=list(set(domains))
 
-    domains=list(set(domains))
+        if counts!=0:
+            domains=domains[:counts]    
+            domain = cleandomain(domain)
 
-    if counts!=0:
-        domains=domains[:counts]    
-    for domain in domains:
-        
-        domain=cleandomain(domain)
-
-
-        if domain and type(domain)==str and "." in domain and len(domain.split('.'))>1:
-
-
-            proxy=None
-
-            # if len(valid_proxies)>1:
-            #     proxy=random.choice(valid_proxies)
-            #     print('pick proxy',proxy)
-
-            # proxy=f"http://127.0.0.1:1080"
-
-            tld = get_tld(domain)
-
-            if tld:
-
+            if domain and isinstance(domain, str) and "." in domain and len(domain.split(".")) > 1:
                 try:
-                    task = asyncio.create_task(lookup_domain_with_retry(domain, [],proxy, semaphore, outfile,db_manager))
-                    # Ensure the semaphore is released even if the task fails
-                    task.add_done_callback(lambda t: semaphore.release())
-                    # print('done', url)
+                    task = asyncio.create_task(
+                        lookup_domain_with_retry(domain, [], None, semaphore, outfile, db_manager)
+                    )
                     tasks.append(task)
-
                 except Exception as e:
-                    print(f"{RED}An error occurred while processing {domain}: {e}")
+                    logger.error(f"An error occurred while processing {domain}: {e}")
 
-
-
-    # Log when the task starts and finishes
-    for task in tasks:
-        await task
+        await asyncio.gather(*tasks)
 
 

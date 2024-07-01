@@ -84,11 +84,11 @@ async def get_proxy():
     proxy=None
     async with aiohttp.ClientSession() as session:
         try:
-            async with session.get('http://demo.spiderpy.cn/get?https') as response:
+            async with session.get('http://demo.spiderpy.cn/get') as response:
                 data = await response.json()
                 proxy=data['proxy']
                 if proxy and 'http' not in proxy:
-                    proxy=f'https://{proxy}'
+                    proxy=f'http://{proxy}'
 
                 return proxy
         except:
@@ -99,10 +99,10 @@ async def get_proxy_proxypool():
     async with aiohttp.ClientSession() as session:
 
         try:
-            async with session.get('https://proxypool.scrape.center/random?https') as response:
+            async with session.get('https://proxypool.scrape.center/random') as response:
                 proxy = await response.text()
                 if proxy and 'http' not in proxy:
-                    proxy=f'https://{proxy}'
+                    proxy=f'http://{proxy}'
                     return proxy
         except:
             return None
@@ -141,28 +141,30 @@ async def lookup_domain_with_retry(
     db_manager
 ):
     retry_count = 0
-    while retry_count < MAX_RETRIES:
-        if retry_count>0:
-            pro_str=None
-            proxy_url=None
-            if valid_proxies:
-                proxy_url=random.choice(valid_proxies)
-            else:
-                try:
-                    proxy_url=await get_proxy()
+    async with semaphore:
 
-                    if proxy_url is None:
-                    
-                        proxy_url=await get_proxy_proxypool()
+        while retry_count < MAX_RETRIES:
+            logger.info('first try without proxy')
+            if retry_count>0:
+                pro_str=None
+                proxy_url=None
+                if valid_proxies:
+                    proxy_url=random.choice(valid_proxies)
+                else:
+                    try:
+                        proxy_url=await get_proxy()
+
+                        if proxy_url is None:
+                        
+                            proxy_url=await get_proxy_proxypool()
 
 
-                except Exception as e:
-                    logger.error('get proxy error:{} use backup',e)
-                    return 
-        logger.info("current proxy{}", proxy_url)
+                    except Exception as e:
+                        logger.error('get proxy error:{} use backup',e)
+                        return 
+            logger.info("current proxy{}", proxy_url)
 
-        try:
-            async with semaphore:
+            try:
                 result = await asyncio.wait_for(
                     lookup_domain(domain, proxy_url, semaphore, outfile,db_manager), timeout=30
                 )
@@ -170,22 +172,22 @@ async def lookup_domain_with_retry(
                     if proxy_url and proxy_url not in valid_proxies:
                         valid_proxies.append(proxy_url)
                     return result
-        except asyncio.TimeoutError:
-            logger.error(f"Timeout occurred for domain: {domain} with proxy: {proxy_url}")
-            if proxy_url and proxy_url  in valid_proxies:
-                valid_proxies.remove(proxy_url)        
-        except Exception as e:
-            logger.error(f"Error occurred: {e}")
-            if proxy_url and proxy_url  in valid_proxies:
-                valid_proxies.remove(proxy_url)        
-        retry_count += 1
-        # if retry_count < MAX_RETRIES:
-        #     delay = min(INITIAL_DELAY * (2 ** retry_count), MAX_DELAY)
-        #     logger.info(f"Retrying in {delay} seconds with proxy {proxy_url}...")
-        #     await asyncio.sleep(delay)
+            except asyncio.TimeoutError:
+                logger.error(f"Timeout occurred for domain: {domain} with proxy: {proxy_url}")
+                if proxy_url and proxy_url  in valid_proxies:
+                    valid_proxies.remove(proxy_url)        
+            except Exception as e:
+                logger.error(f"Error occurred: {e}")
+                if proxy_url and proxy_url  in valid_proxies:
+                    valid_proxies.remove(proxy_url)        
+            retry_count += 1
+            # if retry_count < MAX_RETRIES:
+            #     delay = min(INITIAL_DELAY * (2 ** retry_count), MAX_DELAY)
+            #     logger.info(f"Retrying in {delay} seconds with proxy {proxy_url}...")
+            #     await asyncio.sleep(delay)
 
-    logger.error(f"Max retries reached for domain: {domain}")
-    return None
+        logger.error(f"Max retries reached for domain: {domain}")
+        return None
 
 
 from bs4 import BeautifulSoup

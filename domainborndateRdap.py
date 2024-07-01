@@ -254,13 +254,16 @@ async def lookup_domain_rdap(domain: str,proxy_url: str, semaphore: asyncio.Sema
             # logger.info('url',query_url,'status',response.status)
             if response and response.status == 200:
                 data = await response.json()
+                if data is None:
+                    return False
                 rawdata=data
+                print(f'{domain}----{rawdata}')
                 # Locate the specific eventDate
                 for event in data.get("results", []):
-                        
-                        # logger.info("Found the event:", event)
-                        creation_date_str = event.get("createdDate")
-                        logger.info(creation_date_str)
+                    
+                    # logger.info("Found the event:", event)
+                    creation_date_str = event.get("createdDate")
+                    logger.info(creation_date_str)
                 if creation_date_str:
                     data={'domain':domain,
                         # 'rank':rankno,
@@ -275,8 +278,10 @@ async def lookup_domain_rdap(domain: str,proxy_url: str, semaphore: asyncio.Sema
 
                     logger.info(f'add data ok,{creation_date_str}-{domain}')
 
-                logger.info(f'{GREEN}SUCCESS {GREY}| {BLUE}{response.status} {GREY}| {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain}{GREEN}')
-                return True
+                    logger.info(f'{GREEN}SUCCESS {GREY}| {BLUE}{response.status} {GREY}| {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain}{GREEN}')
+                    return True
+                else:
+                    return False
             else:
                 logger.warning(f"Non-200 status code: {response.status} for {domain}")
                 return False

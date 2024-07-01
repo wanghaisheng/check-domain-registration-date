@@ -217,6 +217,8 @@ async def lookup_domain(
 
         try:
             session=await getSession(proxy_url)
+            if not session:
+                return False
             response=None
             if proxy_url and 'socks' in proxy_url:
                 response=await session.get(query_url,timeout=20)
@@ -374,9 +376,6 @@ async def process_domains_indexdate(domains, outfile,counts,db_manager):
         ):
             print(domain)
 
-            dbdata=db_manager.read_domain_by_url(domain)
-            if dbdata and dbdata.indexat is  None:
-                continue
             proxy = None
 
             # if len(valid_proxies)>1:

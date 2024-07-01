@@ -362,9 +362,6 @@ async def process_domains_title(domains,outfile,counts,db_manager):
             #     print('pick proxy',proxy)
 
             # proxy=f"http://127.0.0.1:1080"
-            dbdata=db_manager.read_domain_by_url(domain)
-            if dbdata and  dbdata.title is  None and dbdata.des is None:
-                continue
 
             tld = get_tld(domain)
 

@@ -1,55 +1,51 @@
-from sqlalchemy import create_engine, Column, Integer, String, DateTime
+import asyncio
+import os
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, select
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.engine.reflection import Inspector
 from dotenv import load_dotenv
-import os
-import async_timeout
+
 load_dotenv()
-import asyncio
+
 # Get Turso connection details from environment variables
 TURSO_URL = os.getenv("TURSO_URL")
 TURSO_TOKEN = os.getenv("TURSO_TOKEN")
 
 dbUrl = f"sqlite+{TURSO_URL}/?authToken={TURSO_TOKEN}&secure=true"
 
+Base = declarative_base()
+
 class DatabaseManager:
     def __init__(self):
-        self.engine = self.get_engine()
-        self.Session = self.get_session()
+        self.engine = create_async_engine(dbUrl, echo=True, future=True)
+        self.Session = sessionmaker(bind=self.engine, class_=AsyncSession, expire_on_commit=False)
         self._init_db()
-        self.Base = declarative_base()
         self.Screenshot = self.define_screenshots_models()
-        self.Domain =self.define_domain_models()
-    def get_engine(self):
-        return create_engine(dbUrl, connect_args={'check_same_thread': False}, echo=True)
-
-    def get_session(self):
-        return sessionmaker(bind=self.engine)
+        self.Domain = self.define_domain_models()
 
     def _init_db(self):
         if not self.check_table_exists():
             print("The 'screenshot' table does not exist. Creating now...")
-            self.Base.metadata.create_all(self.engine)
+            asyncio.run(self.Base.metadata.create_all(self.engine))
             print('screenshot table ok')
         else:
             print("The 'screenshot' table already exists.")
 
     def define_screenshots_models(self):
-        class Screenshot(self.Base):
+        class Screenshot(Base):
             __tablename__ = 'screenshots'
 
             id = Column(Integer, primary_key=True)
             url = Column(String)
             uuid = Column(String)
-            
+
             # Add additional fields if necessary
 
         return Screenshot
 
-
     def define_domain_models(self):
-
-        class Domain(self.Base):
+        class Domain(Base):
             __tablename__ = 'domains'
 
             id = Column(Integer, primary_key=True)
@@ -61,135 +57,130 @@ class DatabaseManager:
             indexat = Column(String)
             indexdata = Column(String)
             uuid = Column(String)
+
         return Domain
+
+    async def get_session(self):
+        async with self.Session() as session:
+            yield session
+
+    async def add_screenshot(self, new_screenshot_data):
+        async with self.get_session() as session:
+            try:
+                screenshot = await session.execute(select(self.Screenshot).filter_by(url=new_screenshot_data.url).first())
+                if screenshot:
+                    for attr, value in new_screenshot_data.__dict__.items():
+                        if value is not None:
+                            setattr(screenshot, attr, value)
+                else:
+                    session.add(new_screenshot_data)
+                await session.commit()
+            except asyncio.TimeoutError:
+                print(f"Timeout occurred during add_screenshot after {timeout} seconds.")
+            except Exception as e:
+                print(f"An error occurred during add_screenshot: {e}")
+
+    async def add_screenshot_list(self, new_screenshots):
+        async with self.get_session() as session:
+            try:
+                for new_screenshot in new_screenshots:
+                    session.add(new_screenshot)
+                await session.commit()
+            except asyncio.TimeoutError:
+                print(f"Timeout occurred during add_screenshot_list after {timeout} seconds.")
+            except Exception as e:
+                print(f"An error occurred during add_screenshot_list: {e}")
+
+    async def read_screenshot_by_url(self, url):
+        async with self.get_session() as session:
+            try:
+                screenshot = await session.execute(select(self.Screenshot).filter_by(url=url).first())
+                return screenshot.scalars().first() if screenshot else None
+            except asyncio.TimeoutError:
+                print(f"Timeout occurred during read_screenshot_by_url after {timeout} seconds.")
+                return None
+            except Exception as e:
+                print(f"An error occurred during read_screenshot_by_url: {e}")
+                return None
+
+    async def read_screenshot_all(self):
+        async with self.get_session() as session:
+            try:
+                screenshots = await session.execute(select(self.Screenshot))
+                return screenshots.scalars().all()
+            except asyncio.TimeoutError:
+                print(f"Timeout occurred during read_screenshot_all after {timeout} seconds.")
+                return []
+            except Exception as e:
+                print(f"An error occurred during read_screenshot_all: {e}")
+                return []
+
+    async def add_domain(self, new_domain_data):
+        async with self.get_session() as session:
+            try:
+                domain = await session.execute(select(self.Domain).filter_by(url=new_domain_data.url).first())
+                if domain:
+                    for attr, value in new_domain_data.__dict__.items():
+                        if value is not None and getattr(domain, attr) != value:
+                            setattr(domain, attr, value)
+                else:
+                    session.add(new_domain_data)
+                await session.commit()
+                print('add domain ok')
+            except asyncio.TimeoutError:
+                print(f"Timeout occurred during add_domain after {timeout} seconds.")
+            except Exception as e:
+                print(f"An error occurred during add_domain: {e}")
+
+    async def add_domain_list(self, new_domains):
+        async with self.get_session() as session:
+            try:
+                for new_domain in new_domains:
+                    session.add(new_domain)
+                await session.commit()
+            except asyncio.TimeoutError:
+                print(f"Timeout occurred during add_domain_list after {timeout} seconds.")
+            except Exception as e:
+                print(f"An error occurred during add_domain_list: {e}")
+
+    async def read_domain_by_url(self, url):
+        async with self.get_session() as session:
+            try:
+                domain = await session.execute(select(self.Domain).filter_by(url=url).first())
+                return domain.scalars().first() if domain else None
+            except asyncio.TimeoutError:
+                print(f"Timeout occurred during read_domain_by_url after {timeout} seconds.")
+                return None
+            except Exception as e:
+                print(f"An error occurred during read_domain_by_url: {e}")
+                return None
+
+    async def read_domain_all(self):
+        async with self.get_session() as session:
+            try:
+                domains = await session.execute(select(self.Domain))
+                return domains.scalars().all()
+            except asyncio.TimeoutError:
+                print(f"Timeout occurred during read_domain_all after {timeout} seconds.")
+                return []
+            except Exception as e:
+                print(f"An error occurred during read_domain_all: {e}")
+                return []
+
+    async def read_domain_all_urls(self):
+        async with self.get_session() as session:
+            try:
+                query_result = await session.execute(select(self.Domain.url))
+                return [name for (name,) in query_result]
+            except asyncio.TimeoutError:
+                print(f"Timeout occurred during read_domain_all_urls after {timeout} seconds.")
+                return []
+            except Exception as e:
+                print(f"An error occurred during read_domain_all_urls: {e}")
+                return []
+
     def check_table_exists(self):
         inspector = Inspector.from_engine(self.engine)
         table_names = inspector.get_table_names()
         return 'screenshots' in table_names
 
-    def add_screenshot(self, new_screenshot_data):
-        with self.Session() as session:
-            screenshot = session.query(self.Screenshot).filter_by(url=new_screenshot_data.url).first()
-            if screenshot:
-                for attr, value in new_screenshot_data.__dict__.items():
-                    if value is not None:
-                        setattr(screenshot, attr, value)
-            else:
-                session.add(new_screenshot_data)
-            session.commit()
-
-    # Add similar methods for add_screenshot_list, read_screenshot_by_url, read_screenshot_all
-    def add_screenshot_list(self,new_screenshots):
-        with self.Session() as session:
-            try:
-                for new_screenshot in new_screenshots:
-                    session.add(new_screenshot)
-                    session.commit()    
-            except Exception as e:
-                print(f"An error occurred: {e}")
-            finally:
-                session.close()
-
-    def read_screenshot_by_url(self,url):
-        with self.Session() as session:
-            domain = session.query(self.Screenshot).filter(self.Screenshot.url == url).first()
-            session.close()
-            return domain       
-    def read_screenshot_all(self):
-        with self.Session() as session:
-
-            domains = session.query(self.Screenshot).all()
-            # for user in users:
-                # print(f"Screenshot: {user.name}, Email: {user.email}")
-
-            # Close the session
-            session.close()    
-            return domains
-    def add_domain(self,new_domain_data):
-        with self.Session() as session:
-
-            try:
-                domain = session.query(self.Domain).filter_by(url=new_domain_data.url).first()
-                if domain:
-                    # Update existing domain, ignoring attributes with None values
-                    for attr, value in new_domain_data.__dict__.items():
-                        if value is not None and getattr(domain, attr) != value:
-                            setattr(domain, attr, value)
-
-                else:
-                    # Add new domain
-                    session.add(new_domain_data)
-                session.commit()
-                print('add domain ok')
-            except Exception as e:
-                print(f"An error occurred: {e}")
-            finally:
-                session.close()
-
-    def add_domain_list(self,new_domains):
-        with self.Session() as session:
-            try:
-                for new_domain in new_domains:
-                    session.add(new_domain)
-                    session.commit()    
-            except Exception as e:
-                print(f"An error occurred: {e}")
-            finally:
-                session.close()
-
-    def read_domain_by_url(self,url):
-        with self.Session() as session:
-            domain = session.query(self.Domain).filter(self.Domain.url == url).first()
-            session.close()
-            return domain       
-
-
-    async def read_domain_all_async(self, timeout=30):
-        domains = []
-
-        try:
-            async with async_timeout.timeout(timeout):
-                with self.Session() as session:
-
-                    domains = session.query(self.Domain).all()
-                    # for user in users:
-                        # print(f"Domain: {user.name}, Email: {user.email}")
-
-                    # Close the session
-                    session.close()    
-                    
-        except asyncio.TimeoutError:
-            print(f"Query timed out after {timeout} seconds")
-            # Handle timeout error here if needed
-        except Exception as e:
-            print(f"Error fetching data: {e}")
-            # Handle other exceptions
-
-        return domains
-    def read_domain_all(self):
-        # Query the database
-        with self.Session() as session:
-
-            domains = session.query(self.Domain).all()
-            # for user in users:
-                # print(f"Domain: {user.name}, Email: {user.email}")
-
-            # Close the session
-            session.close()    
-            return domains
-    def read_domain_all_urls(self):
-        # Initialize an empty list to store the queried names
-        domain_names = []
-
-        # Query the database
-        with self.Session() as session:
-            # Query only the 'name' column from the Domain table
-            query_result = session.query(self.Domain.url).all()
-            
-            # Extract names from the query result
-            domain_names = [name for (name,) in query_result]
-            
-            # No need to manually close the session when using 'with' statement
-
-        # 'domain_names' contains only the 'name' column values
-        return domain_names

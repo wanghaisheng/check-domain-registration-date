@@ -261,50 +261,56 @@ try:
     counts=int(counts)
 except:
     counts=0
+async def main():
 
-if filename and filename.strip():
-    if colname and colname.strip():
-
-
-        start=datetime.now()
-        inputfilepath=filename + ".csv"
-        # logger.add(f"{folder_path}/domain-index-ai.log")
-        # print(domains)
-        outfilepath=inputfilepath.replace('.csv','-index.csv')
-        outfile = Recorder(folder_path+'/'+outfilepath, cache_size=50)
-        df = pd.read_csv(inputfilepath, encoding="ISO-8859-1")
-        domains=df[colname].tolist()
-        db_manager = DatabaseManager()
-        print(f'start to done domains :{len(domains)}')
-
-        dbdata=db_manager.read_domain_all_async(timeout=30)
-        donedomains=[]
-        for i in dbdata:
-            if i.indexat is not None:
-                donedomains.append(i.url)
-        domains=[i for i in domains if i not in donedomains]
-       
-        print(f'end to done domains :{len(domains)}--{len(donedomains)}')
-        asyncio.run(process_domains_indexdate(domains,outfile,counts,db_manager))
-        end=datetime.now()
-        print('costing',end-start)
-        outfile.record()
-else:
-    print('please check input')
+    if filename and filename.strip():
+        if colname and colname.strip():
 
 
+            start=datetime.now()
+            inputfilepath=filename + ".csv"
+            # logger.add(f"{folder_path}/domain-index-ai.log")
+            # print(domains)
+            outfilepath=inputfilepath.replace('.csv','-index.csv')
+            outfile = Recorder(folder_path+'/'+outfilepath, cache_size=50)
+            df = pd.read_csv(inputfilepath, encoding="ISO-8859-1")
+            domains=df[colname].tolist()
+            db_manager = DatabaseManager()
+            print(f'start to done domains :{len(domains)}')
+            dbdata = await db_manager.read_domain_all()
+
+            donedomains=[]
+            for i in dbdata:
+                if i.indexat is not None:
+                    donedomains.append(i.url)
+            domains=[i for i in domains if i not in donedomains]
+        
+            print(f'end to done domains :{len(domains)}--{len(donedomains)}')
+            asyncio.run(process_domains_indexdate(domains,outfile,counts,db_manager))
+            end=datetime.now()
+            print('costing',end-start)
+            outfile.record()
+    else:
+        print('please check input')
 
 
 
-    # Specify the maximum size of each RAR file in MB
-max_size_mb = 1500
 
-# Create a temporary ZIP file for the first archive
-zip_count = 1
-zip_temp_file = os.path.join(folder_path, f"temp{zip_count}.zip")
-zip_file = zipfile.ZipFile(zip_temp_file, "w", zipfile.ZIP_DEFLATED)
 
-# Compress the folder into multiple ZIP archives
-zip_folder(
-    folder_path, output_folder, max_size_mb, zip_file, zip_temp_file, zip_count
-)
+        # Specify the maximum size of each RAR file in MB
+    max_size_mb = 1500
+
+    # Create a temporary ZIP file for the first archive
+    zip_count = 1
+    zip_temp_file = os.path.join(folder_path, f"temp{zip_count}.zip")
+    zip_file = zipfile.ZipFile(zip_temp_file, "w", zipfile.ZIP_DEFLATED)
+
+    # Compress the folder into multiple ZIP archives
+    zip_folder(
+        folder_path, output_folder, max_size_mb, zip_file, zip_temp_file, zip_count
+    )
+
+# Assuming you have an asyncio event loop running
+import asyncio
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())

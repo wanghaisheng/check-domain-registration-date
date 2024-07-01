@@ -8,5 +8,5 @@ loguru
 aiohttp
 aiohttp_socks
 sqlalchemy-libsql
-
 python-dotenv
+sqlalchemy[asyncio]

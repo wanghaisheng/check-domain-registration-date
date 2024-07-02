@@ -131,7 +131,31 @@ def get_tld(domain: str):
     parts = domain.split(".")
     return ".".join(parts[1:]) if len(parts) > 1 else parts[0]
 
+async def getResponse(proxy_url,query_url):
+    logger.info('get response',proxy_url)
 
+    if proxy_url is None or  'http' in proxy_url:
+        logger.info('not socks prroxy')
+        async with aiohttp.ClientSession() as session:
+
+            response=await session.get(query_url, proxy=proxy_url if proxy_url else None,
+                # auth=auth.prepare_request, 
+                timeout=30)               
+            return response       
+    
+    else:
+
+        # initialize a SOCKS proxy connector
+        connector = ProxyConnector.from_url(proxy_url)
+
+        # initialize an AIOHTTP client with the SOCKS proxy connector
+        async with aiohttp.ClientSession(connector=connector) as session:
+
+            response=await session.get(query_url,timeout=30)
+                    
+
+
+            return response
 async def lookup_domain_with_retry(
     domain: str,
     valid_proxies: list,
@@ -217,18 +241,8 @@ async def lookup_domain(
         logger.info("querying:{}", query_url)
 
         try:
-            session=await getSession(proxy_url)
-            if not session:
-                return False
-            response=None
-            if proxy_url and 'socks' in proxy_url:
-                response=await session.get(query_url,timeout=20)
-                    
-            else:
-                response=await session.get(query_url, proxy=proxy_url if proxy_url else None,
-                # auth=auth.prepare_request, 
-                timeout=20)   
-                                
+            response=await getResponse(proxy_url,query_url)
+ 
 
             creation_date_str=''
             rawdata=''

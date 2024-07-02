@@ -153,7 +153,31 @@ async def getSession(proxy_url):
     else:
         session= aiohttp.ClientSession() 
         return session        
+async def getResponse(proxy_url,query_url):
+    logger.info('get response',proxy_url)
 
+    if proxy_url is None or  'http' in proxy_url:
+        logger.info('not socks prroxy')
+        async with aiohttp.ClientSession() as session:
+
+            response=await session.get(query_url, proxy=proxy_url if proxy_url else None,
+                # auth=auth.prepare_request, 
+                timeout=30)               
+            return response       
+    
+    else:
+
+        # initialize a SOCKS proxy connector
+        connector = ProxyConnector.from_url(proxy_url)
+
+        # initialize an AIOHTTP client with the SOCKS proxy connector
+        async with aiohttp.ClientSession(connector=connector) as session:
+
+            response=await session.get(query_url,timeout=30)
+                    
+
+
+            return response
 def get_tld(domain: str):
     '''Extracts the top-level domain from a domain name.'''
     parts = domain.split('.')
@@ -230,16 +254,7 @@ async def lookup_domain(domain: str,proxy_url: str, semaphore: asyncio.Semaphore
 
 
         try:
-            session=await getSession(proxy_url)
-            response=None
-            if proxy_url and 'socks' in proxy_url:
-                response=await session.get(query_url,timeout=20)
-                    
-            else:
-                response=await session.get(query_url, proxy=proxy_url if proxy_url else None,
-                # auth=auth.prepare_request, 
-                timeout=20)   
-                                
+            response=await getResponse(proxy_url,query_url)
 
             creation_date_str=''
             rawdata=''

@@ -146,7 +146,31 @@ async def getSession(proxy_url):
     else:
         session= aiohttp.ClientSession() 
         return session            
+async def getResponse(proxy_url,query_url):
+    logger.info('get response',proxy_url)
 
+    if proxy_url is None or  'http' in proxy_url:
+        logger.info('not socks prroxy')
+        async with aiohttp.ClientSession() as session:
+
+            response=await session.get(query_url, proxy=proxy_url if proxy_url else None,
+                # auth=auth.prepare_request, 
+                timeout=30)               
+            return response       
+    
+    else:
+
+        # initialize a SOCKS proxy connector
+        connector = ProxyConnector.from_url(proxy_url)
+
+        # initialize an AIOHTTP client with the SOCKS proxy connector
+        async with aiohttp.ClientSession(connector=connector) as session:
+
+            response=await session.get(query_url,timeout=30)
+                    
+
+
+            return response
 async def lookup_domain_with_retry(domain: str, valid_proxies:list,proxy_url: str, semaphore: asyncio.Semaphore, outfile:Recorder,db_manager):
     retry_count = 0
     while retry_count < MAX_RETRIES:
@@ -227,15 +251,8 @@ async def lookup_domain_rdap(domain: str,proxy_url: str, semaphore: asyncio.Sema
 
 
         try:
-            session=await getSession(proxy_url)
-            response=None
-            if proxy_url and 'socks' in proxy_url:
-                response=await session.get(query_url,timeout=20)
-                    
-            else:
-                response=await session.get(query_url, proxy=proxy_url if proxy_url else None,
-                # auth=auth.prepare_request, 
-                timeout=20)   
+            response=await getResponse(proxy_url,query_url)
+
                                 
 
             creation_date_str=''

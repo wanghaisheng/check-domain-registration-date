@@ -351,7 +351,7 @@ def cleandomain(domain):
     if domain.endswith("/"):
         domain = domain.rstrip("/")
     return domain
-async def process_domains_revv(domains, outfile, counts, db_manager):
+async def process_domains_title(domains, outfile, counts, db_manager):
     semaphore = asyncio.Semaphore(25)  # Set the concurrency limit
 
     # Initialize a counter

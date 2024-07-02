@@ -356,31 +356,48 @@ def cleandomain(domain):
     if domain.endswith("/"):
         domain = domain.rstrip("/")
     return domain
-async def process_domains_rdap(domains,outfile,counts,db_manager,semaphore):
-    
-    async with semaphore:
+async def process_domains_revv(domains, outfile, counts, db_manager):
+    semaphore = asyncio.Semaphore(25)  # Set the concurrency limit
 
-
-        domains=list(set(domains))
-    
-
-
-        await    fetch_rdap_servers()
-        # logger.info(RDAP_SERVERS)
-
-        tasks = []
-        if counts!=0:
-            domains=domains[:counts]
+    # Initialize a counter
+    domain_counter = 0
+    if counts>0:
+        domains=domains[:counts]
+    # This will be an asynchronous generator
+    async def domain_generator(domains, batch_size=5):
+        nonlocal domain_counter
         for domain in domains:
             domain = cleandomain(domain)
-
             if domain and isinstance(domain, str) and "." in domain and len(domain.split(".")) > 1:
-                try:
-                    task = asyncio.create_task(
-                        lookup_domain_with_retry(domain, [], None, semaphore, outfile, db_manager)
-                    )
-                    tasks.append(task)
-                except Exception as e:
-                    logger.error(f"An error occurred while processing {domain}: {e}")
+                yield domain
+                domain_counter += 1
+                if domain_counter % batch_size == 0:
+                    # Yield after every 5 domains
+                    await asyncio.sleep(0)  # Yield control back to the event loop
 
+    # Use the domain_generator to get batches of domains
+    domain_gen = domain_generator(domains)
+
+    async def process_batch(valid_proxies):
+        tasks = []
+        for _ in range(5):  # Process 5 domains in a batch
+            domain = await domain_gen.__anext__()  # Get the next domain from the generator
+            if domain:
+                task = asyncio.create_task(
+                    lookup_domain_with_retry(domain, valid_proxies, None,semaphore, outfile, db_manager)
+                )
+                tasks.append(task)
+
+        # Wait for all tasks in the current batch to complete
         await asyncio.gather(*tasks)
+
+    # Main processing loop
+    while True:
+        try:
+            valid_proxies = []  # Initialize valid proxies list for each batch
+            await process_batch(valid_proxies)
+        except StopAsyncIteration:
+            # No more domains to process
+            break
+
+    # Rest of your code...

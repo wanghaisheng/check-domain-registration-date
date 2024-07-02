@@ -46,8 +46,8 @@ YELLOW = '\033[1;33m'
 RESET  = '\033[0m'
 
 # Setup basic logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-
+# logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logger.add('1.log')
 # Global variable to store RDAP servers
 RDAP_SERVERS = {}
 
@@ -96,24 +96,9 @@ def get_tld(domain: str):
     return '.'.join(parts[1:]) if len(parts) > 1 else parts[0]
 from aiohttp_socks import ProxyType, ProxyConnector, ChainProxyConnector
 
-async def getSession(proxy_url):
-    if proxy_url:
-        if 'socks' in proxy_url:
-            # initialize a SOCKS proxy connector
-            connector = ProxyConnector.from_url(proxy_url)
-
-            # initialize an AIOHTTP client with the SOCKS proxy connector
-            session=  aiohttp.ClientSession(connector=connector)
-            return session
-        else:
-            session= aiohttp.ClientSession() 
-            return session        
-
-    else:
-        session= aiohttp.ClientSession() 
-        return session      
 async def getResponse(proxy_url,query_url):
     logger.info('get response',proxy_url)
+    response=None
 
     if proxy_url is None or  'http' in proxy_url:
         logger.info('not socks prroxy')
@@ -136,7 +121,8 @@ async def getResponse(proxy_url,query_url):
                     
 
 
-            return response 
+            return response
+    
 async def lookup_domain_with_retry(domain: str, valid_proxies:list,proxy_url: str, semaphore: asyncio.Semaphore, outfile:Recorder,db_manager):
     retry_count = 0
     while retry_count < MAX_RETRIES:
@@ -152,18 +138,16 @@ async def lookup_domain_with_retry(domain: str, valid_proxies:list,proxy_url: st
                     if proxy_url is None:
                     
                         proxy_url=await get_proxy_proxypool()
-                    if proxy_url is None :
                         # proxy_url='http://127.0.0.1:1080'
-                        break
 
                 except Exception as e:
                     logger.error('get proxy error:{} use backup',e)
-                    return     
         logger.info(f"{retry_count} retry current proxy {proxy_url}")
+        proxy_url=None
 
         try:
             async with semaphore:
-                result = await lookup_domain(domain, proxy_url,semaphore, outfile,db_manager)
+                result = await asyncio.wait_for(lookup_domain(domain, proxy_url, semaphore, outfile,db_manager), timeout=10)
                 if result:
                     if proxy_url and proxy_url not in valid_proxies:
                         valid_proxies.append(proxy_url)
@@ -178,13 +162,16 @@ async def lookup_domain_with_retry(domain: str, valid_proxies:list,proxy_url: st
                 valid_proxies.remove(proxy_url)        
         
         retry_count += 1
-        if retry_count < MAX_RETRIES:
-            delay = min(INITIAL_DELAY * (2 ** retry_count), MAX_DELAY)
-            logger.info(f"Retrying in {delay} seconds with proxy {proxy_url}...")
-            await asyncio.sleep(delay)
+        # if retry_count < MAX_RETRIES:
+        #     delay = min(INITIAL_DELAY * (2 ** retry_count), MAX_DELAY)
+        #     logger.info(f"Retrying in {delay} seconds with proxy {proxy_url}...")
+        #     await asyncio.sleep(delay)
     
     logger.error(f"Max retries reached for domain: {domain}")
+
     return None    
+
+
 async def lookup_domain(domain: str,proxy_url: str, semaphore: asyncio.Semaphore, outfile:Recorder,db_manager):
     '''
     Looks up a domain using the RDAP protocol.
@@ -195,95 +182,168 @@ async def lookup_domain(domain: str,proxy_url: str, semaphore: asyncio.Semaphore
     '''
 
 
-    async with semaphore:
+    # async with semaphore:
 
 
-        logger.info('use proxy_url:{}',proxy_url)
+    logger.info('use proxy_url:{}',proxy_url)
 
 
-        query_url=f'https://domains.revved.com/v1/whois?domains={domain}'
+    query_url=f'https://domains.revved.com/v1/whois?domains={domain}'
+
+    logger.info('querying:{}',query_url)
 
 
-        session = None  # Initialize session at the beginning of the function
-
-        logger.info('querying:{}',query_url)
-
+    try:
         response=None
 
-        try:
-            response=await getResponse(proxy_url,query_url)
+        logger.info('get response',proxy_url)
+        response=None
+
+        if proxy_url is None or  'http' in proxy_url:
+            logger.info('not socks prroxy')
+            async with aiohttp.ClientSession() as session:
+
+                response=await session.get(query_url, proxy=proxy_url if proxy_url else None,
+                    # auth=auth.prepare_request, 
+                    timeout=30)               
 
 
-            creation_date_str=''
-            rawdata=''
-            if response is None:
-                logger.error(f"Received None as response for {query_url}")
-                return False
+                creation_date_str=''
+                rawdata=''
+                if response is None:
+                    logger.error(f"Received None as response for {query_url}")
+                    return False
 
-            # Parse JSON and check if data is None
-            data = await response.json()
-            if data is None:
-                logger.error(f"Received None as data for {query_url}")
-                return False    
+                # Parse JSON and check if data is None
+                data = await response.json()
+                if data is None:
+                    logger.error(f"Received None as data for {query_url}")
+                    return False    
 
-            creation_date_str=''
-            rawdata=''
+                creation_date_str=''
+                rawdata=''
 
-            # logger.info('url',query_url,'status',response.status)
-            if response and response.status == 200:
-                logger.info('response json:{}',data)
+                # logger.info('url',query_url,'status',response.status)
+                if response and response.status == 200:
+                    logger.info('response json:{}',data)
 
-                rawdata=data
-                # Locate the specific eventDate
-                if 'results' in data:
-                    for event in data.get("results", []):
-                            
-                            # logger.info("Found the event:", event)
-                            creation_date_str = event.get("createdDate")
-                            logger.info(creation_date_str)
-                    if creation_date_str:
-                        data={'domain':domain,
-                            # 'rank':rankno,
-                            "born":creation_date_str,
-                            # 'raw':rawdata
-                            }
-                        outfile.add_data(data)
+                    rawdata=data
+                    # Locate the specific eventDate
+                    if 'results' in data:
+                        for event in data.get("results", []):
+                                
+                                # logger.info("Found the event:", event)
+                                creation_date_str = event.get("createdDate")
+                                logger.info(creation_date_str)
+                        if creation_date_str:
+                            data={'domain':domain,
+                                # 'rank':rankno,
+                                "born":creation_date_str,
+                                # 'raw':rawdata
+                                }
+                            outfile.add_data(data)
 
 
-                        # Domain=
-                        new_domain = db_manager.Domain(
-                            url=domain,
-                        bornat=creation_date_str)
-                        db_manager.add_domain(new_domain)       
-                        return True                 
+                            # Domain=
+                            new_domain = db_manager.Domain(
+                                url=domain,
+                            bornat=creation_date_str)
+                            db_manager.add_domain(new_domain)       
+                            return True                 
+                    else:
+                        print('status 200 but without results key',data)
+                        return False
+
+
+
+                
                 else:
-                    print('status 200 but without results key',data)
+                    logger.warning(f"Non-200 status code: {response.status} for {domain}")
                     return False
 
 
 
-            
-            else:
-                logger.warning(f"Non-200 status code: {response.status} for {domain}")
-                return False
+        else:
 
-        except asyncio.TimeoutError as e:
-            logger.info(f'{RED} TimeoutError {GREY}| --- | {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain} {RED}| {e}{RESET}')
-            raise
+            # initialize a SOCKS proxy connector
+            connector = ProxyConnector.from_url(proxy_url)
 
-        except aiohttp.ClientError as e:
-            logger.info(f'{RED} ClientError {GREY}| --- | {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain} {RED}| {e}{RESET}')
-            raise
+            # initialize an AIOHTTP client with the SOCKS proxy connector
+            async with aiohttp.ClientSession(connector=connector) as session:
 
-        except Exception as e:
-            if response.json():
-                print(response.json())
-            logger.info(f'{RED}Exception  {GREY}| --- | {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain} {RED}| {e}{RESET}')
-            raise
+                response=await session.get(query_url,timeout=30)
 
-        finally:
-            if session:
-                await session.close()
+
+                creation_date_str=''
+                rawdata=''
+                if response is None:
+                    logger.error(f"Received None as response for {query_url}")
+                    return False
+
+                # Parse JSON and check if data is None
+                data = await response.json()
+                if data is None:
+                    logger.error(f"Received None as data for {query_url}")
+                    return False    
+
+                creation_date_str=''
+                rawdata=''
+
+                # logger.info('url',query_url,'status',response.status)
+                if response and response.status == 200:
+                    logger.info('response json:{}',data)
+
+                    rawdata=data
+                    # Locate the specific eventDate
+                    if 'results' in data:
+                        for event in data.get("results", []):
+                                
+                                # logger.info("Found the event:", event)
+                                creation_date_str = event.get("createdDate")
+                                logger.info(creation_date_str)
+                        if creation_date_str:
+                            data={'domain':domain,
+                                # 'rank':rankno,
+                                "born":creation_date_str,
+                                # 'raw':rawdata
+                                }
+                            outfile.add_data(data)
+
+
+                            # Domain=
+                            new_domain = db_manager.Domain(
+                                url=domain,
+                            bornat=creation_date_str)
+                            db_manager.add_domain(new_domain)       
+                            return True                 
+                    else:
+                        print('status 200 but without results key',data)
+                        return False
+
+
+
+                
+                else:
+                    logger.warning(f"Non-200 status code: {response.status} for {domain}")
+                    return False
+                        
+
+
+
+
+
+    except asyncio.TimeoutError as e:
+        logger.info(f'{RED} TimeoutError {GREY}| --- | {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain} {RED}| {e}{RESET}')
+        raise
+
+    except aiohttp.ClientError as e:
+        logger.info(f'{RED} ClientError {GREY}| --- | {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain} {RED}| {e}{RESET}')
+        raise
+
+    except Exception as e:
+        logger.info(f'{RED}Exception  {GREY}| --- | {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain} {RED}| {e}{RESET}')
+        raise
+        
 
 
 
@@ -326,44 +386,66 @@ def cleandomain(domain):
     return domain
 # To run the async function, you would do the following in your main code or script:
 # asyncio.run(test_proxy('your_proxy_url_here'))
+def getlocalproxies():
+    raw_proxies = []
+    import os
+    for p in ['http','socks4','socks5']:
+        proxyfile = r'D:\Download\audio-visual\a_proxy_Tool\proxy-scraper-checker\out-revv\proxies\{p}.txt'
 
-async def process_domains_revv(domains,outfile,counts,db_manager,semaphore):
 
+        proxy_dir = r'D:\Download\audio-visual\a_proxy_Tool\proxy-scraper-checker\out-revv\proxies'
+        proxyfile = os.path.join(proxy_dir, f'{p}.txt')
+        if os.path.exists(proxyfile):
 
-    
-    async with semaphore:
+            tmp = open(proxyfile, "r", encoding="utf8").readlines()
+            tmp = list(set(tmp))
+            # print('p',p,len(tmp))
+            raw_proxies+= [f'{p}://'+v.replace("\n", "") for v in tmp if "\n" in v]
 
-        tasks = []
-        domains=list(set(domains))
-        if counts!=0:
-            domains=domains[:counts]    
-        await    fetch_rdap_servers()
+    raw_proxies=list(set(raw_proxies))
+    return raw_proxies
+async def process_domains_revv(domains, outfile, counts, db_manager):
+    semaphore = asyncio.Semaphore(25)  # Set the concurrency limit
 
+    # Initialize a counter
+    domain_counter = 0
+    if counts>0:
+        domains=domains[:counts]
+    # This will be an asynchronous generator
+    async def domain_generator(domains, batch_size=5):
+        nonlocal domain_counter
         for domain in domains:
             domain = cleandomain(domain)
-
             if domain and isinstance(domain, str) and "." in domain and len(domain.split(".")) > 1:
-                try:
-                    task = asyncio.create_task(
-                        lookup_domain_with_retry(domain, [], None, semaphore, outfile, db_manager)
-                    )
-                    tasks.append(task)
-                except Exception as e:
-                    logger.error(f"An error occurred while processing {domain}: {e}")
+                yield domain
+                domain_counter += 1
+                if domain_counter % batch_size == 0:
+                    # Yield after every 5 domains
+                    await asyncio.sleep(0)  # Yield control back to the event loop
 
+    # Use the domain_generator to get batches of domains
+    domain_gen = domain_generator(domains)
+
+    async def process_batch(valid_proxies):
+        tasks = []
+        for _ in range(5):  # Process 5 domains in a batch
+            domain = await domain_gen.__anext__()  # Get the next domain from the generator
+            if domain:
+                task = asyncio.create_task(
+                    lookup_domain_with_retry(domain, valid_proxies, None,semaphore, outfile, db_manager)
+                )
+                tasks.append(task)
+
+        # Wait for all tasks in the current batch to complete
         await asyncio.gather(*tasks)
 
-    # start=datetime.now()
-    # inputfilepath=r'D:\Download\audio-visual\a_ideas\results-traffic-journey-srcs-rdap-error.csv'
-    # inputfilepath=r'D:\Download\audio-visual\a_ideas\results-traffic-journey-combined-rdap-error.csv'
-    # inputfilepath=r'D:\Download\audio-visual\a_ideas\results-organic-competitors-combined-rdap-error.csv'
-    # # inputfilepath=r'D:\Download\audio-visual\a_ideas\top1000ai.csv'
-    # domainkey='domain'
+    # Main processing loop
+    while True:
+        try:
+            valid_proxies = []  # Initialize valid proxies list for each batch
+            await process_batch(valid_proxies)
+        except StopAsyncIteration:
+            # No more domains to process
+            break
 
-    # # print(domains)
-    # outfilepath=inputfilepath.replace('error.csv','-reved.csv')
-    # outfile = Recorder(outfilepath, cache_size=10)
-    # asyncio.run(process_domains())
-    # end=datetime.now()
-    # print('costing',end-start)
-    # outfile.record()
+    # Rest of your code...

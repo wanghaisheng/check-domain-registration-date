@@ -236,7 +236,7 @@ def getlocalproxies():
     # print('clean count',len(valid_proxies))
 
 # Asynchronous function to process domains and fetch index dates
-async def process_domains_indexdate(domains, outfile, counts, db_manager, semaphore):
+async def process_domains_indexdate(domains, outfile, counts, db_manager):
     semaphore = asyncio.Semaphore(25)  # Set the concurrency limit
 
     # Initialize a counter

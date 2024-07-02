@@ -181,7 +181,7 @@ async def getResponse(proxy_url,query_url):
 def get_tld(domain: str):
     '''Extracts the top-level domain from a domain name.'''
     parts = domain.split('.')
-    return '.'.join(parts[1:]) if len(parts) > 1 else parts[0]
+    return '.'.join(parts[-1:]) if len(parts) > 1 else parts[0]
 async def lookup_domain_with_retry(domain: str, valid_proxies:list,proxy_url: str, semaphore: asyncio.Semaphore, outfile:Recorder,db_manager):
     retry_count = 0
     while retry_count < MAX_RETRIES:

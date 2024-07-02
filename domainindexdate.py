@@ -15,7 +15,7 @@ MAX_DELAY = 10
 RDAP_SERVERS = {}
 
 # Initialize logging
-logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(level=logging.ERROR, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # Function to get the top-level domain from a domain name
 def get_tld(domain: str):

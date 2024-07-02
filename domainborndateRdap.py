@@ -37,7 +37,7 @@ MAX_RETRIES = 3
 INITIAL_DELAY = 1
 MAX_DELAY = 10
 # Setup basic logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
 # import loguru
 from loguru import logger
 

@@ -46,8 +46,8 @@ YELLOW = '\033[1;33m'
 RESET  = '\033[0m'
 
 # Setup basic logging
-# logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-logger.add('1.log')
+logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
+# logger.add('1.log')
 # Global variable to store RDAP servers
 RDAP_SERVERS = {}
 

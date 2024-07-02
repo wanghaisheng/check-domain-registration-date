@@ -48,7 +48,7 @@ INITIAL_DELAY = 1
 MAX_DELAY = 10
 
 # Setup basic logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Global variable to store RDAP servers
 RDAP_SERVERS = {}

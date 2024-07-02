@@ -287,7 +287,7 @@ async def main():
             domains=[i for i in domains if i not in donedomains]
         
             print(f'end to done domains :{len(domains)}--{len(donedomains)}')
-            await process_domains_indexdate(domains,outfile,counts,db_manager,semaphore)
+            await process_domains_indexdate(domains,outfile,counts,db_manager)
             end=datetime.now()
             print('costing',end-start)
             outfile.record()

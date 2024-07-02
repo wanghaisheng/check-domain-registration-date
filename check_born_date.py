@@ -281,10 +281,9 @@ if filename and filename.strip():
             if i.bornat is not None:
                 donedomains.append(i.url)
         domains=[i for i in domains if i not in donedomains]
-        semaphore = asyncio.Semaphore(10)  # Adjust the concurrency limit as per your needs
        
 
-        asyncio.run(process_domains_revv(domains,outfile,counts,db_manager,semaphore))
+        asyncio.run(process_domains_revv(domains,outfile,counts,db_manager))
         end=datetime.now()
         print('costing',end-start)
         outfile.record()

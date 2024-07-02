@@ -20,7 +20,7 @@ logging.basicConfig(level=logging.ERROR, format="%(asctime)s - %(levelname)s - %
 # Function to get the top-level domain from a domain name
 def get_tld(domain: str):
     parts = domain.split(".")
-    return ".".join(parts[1:]) if len(parts) > 1 else parts[0]
+    return ".".join(parts[-1:]) if len(parts) > 1 else parts[0]
 
 # Function to clean the domain name
 def cleandomain(domain):

@@ -274,11 +274,18 @@ if filename and filename.strip():
         domains=df[colname].tolist()
         domains=df[colname].tolist()
         db_manager = DatabaseManager()
-        dbdata=db_manager.read_domain_all()
         donedomains=[]
-        for i in dbdata:
-            if i.title is not None and i.des is not None:
-                donedomains.append(i.url)
+        try:
+            dbdata=db_manager.read_domain_all()
+
+            for i in dbdata:
+                if i.indexat is not None:
+                    donedomains.append(i.url)        
+        except Exception as e:
+            print(f'query error: {e}')
+            if os.path.exists(outfilepath):
+                df=pd.read_csv(outfilepath)
+                donedomains=df['domain'].to_list()
         domains=[i for i in domains if i not in donedomains]
        
                

@@ -281,9 +281,19 @@ async def main():
             semaphore = asyncio.Semaphore(10)  # Adjust the concurrency limit as per your needs
 
             donedomains=[]
-            for i in dbdata:
-                if i.indexat is not None:
-                    donedomains.append(i.url)
+            try:
+                dbdata=db_manager.read_domain_all()
+
+                for i in dbdata:
+                    if i.indexat is not None:
+                        donedomains.append(i.url)        
+            except Exception as e:
+                print(f'query error: {e}')
+                if os.path.exists(outfilepath):
+                    df=pd.read_csv(outfilepath)
+                    donedomains=df['domain'].to_list()
+
+
             domains=[i for i in domains if i not in donedomains]
         
             print(f'end to done domains :{len(domains)}--{len(donedomains)}')

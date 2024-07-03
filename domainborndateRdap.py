@@ -229,93 +229,92 @@ async def lookup_domain_rdap(domain: str,proxy_url: str, semaphore: asyncio.Sema
     :param semaphore: The semaphore to use for concurrency limiting.
     '''
 
-    async with semaphore:
-        tld = get_tld(domain)
-        # logger.info('tld')
-        rdap_url = RDAP_SERVERS.get(tld)
-        if tld=='ai':
-            rdap_url='https://rdap.whois.ai/'
-        # logger.info('rdap',rdap_url)
-        if not rdap_url:
-            return
+    tld = get_tld(domain)
+    # logger.info('tld')
+    rdap_url = RDAP_SERVERS.get(tld)
+    if tld=='ai':
+        rdap_url='https://rdap.whois.ai/'
+    # logger.info('rdap',rdap_url)
+    if not rdap_url:
+        return
 
-        query_url = f'{rdap_url}domain/{domain}'
-        # logger.info('query_url',domain)
+    query_url = f'{rdap_url}domain/{domain}'
+    # logger.info('query_url',domain)
 # Usage with aiohttp ClientSession
-        auth = RdapRequestAuth(lacnic_apikey='lacnic_apikey')
+    auth = RdapRequestAuth(lacnic_apikey='lacnic_apikey')
 
-        
-        session = None  # Initialize session at the beginning of the function
-
-
+    
+    session = None  # Initialize session at the beginning of the function
 
 
-        try:
-            response=await getResponse(proxy_url,query_url)
 
-                                
 
-            creation_date_str=''
-            rawdata=''
-            if response is None:
-                logger.error(f"Received None as response for {query_url}")
-                return False
+    try:
+        response=await getResponse(proxy_url,query_url)
 
-            # Parse JSON and check if data is None
-            data = await response.json()
-            if data is None:
-                logger.error(f"Received None as data for {query_url}")
-                return False
-                                
-            creation_date_str=''
-            rawdata=''
+                            
 
-            # logger.info('url',query_url,'status',response.status)
-            if response and response.status == 200:
+        creation_date_str=''
+        rawdata=''
+        if response is None:
+            logger.error(f"Received None as response for {query_url}")
+            return False
 
-                rawdata=data
-                print(f'{domain}----{rawdata}')
-                # Locate the specific eventDate
-                for event in data.get("results", []):
-                    
-                    # logger.info("Found the event:", event)
-                    creation_date_str = event.get("createdDate")
-                    logger.info(creation_date_str)
-                if creation_date_str:
-                    data={'domain':domain,
-                        # 'rank':rankno,
-                        "born":creation_date_str,
-                        # 'raw':rawdata
-                        }
-                    outfile.add_data(data)
-                    new_domain = db_manager.Domain(
-                        url=domain,
-                    bornat=creation_date_str)
-                    db_manager.add_domain(new_domain)
+        # Parse JSON and check if data is None
+        data = await response.json()
+        if data is None:
+            logger.error(f"Received None as data for {query_url}")
+            return False
+                            
+        creation_date_str=''
+        rawdata=''
 
-                    logger.info(f'add data ok,{creation_date_str}-{domain}')
+        # logger.info('url',query_url,'status',response.status)
+        if response and response.status == 200:
 
-                    logger.info(f'{GREEN}SUCCESS {GREY}| {BLUE}{response.status} {GREY}| {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain}{GREEN}')
-                    return True
-                else:
-                    return False
+            rawdata=data
+            print(f'{domain}----{rawdata}')
+            # Locate the specific eventDate
+            for event in data.get("results", []):
+                
+                # logger.info("Found the event:", event)
+                creation_date_str = event.get("createdDate")
+                logger.info(creation_date_str)
+            if creation_date_str:
+                data={'domain':domain,
+                    # 'rank':rankno,
+                    "born":creation_date_str,
+                    # 'raw':rawdata
+                    }
+                outfile.add_data(data)
+                new_domain = db_manager.Domain(
+                    url=domain,
+                bornat=creation_date_str)
+                db_manager.add_domain(new_domain)
+
+                logger.info(f'add data ok,{creation_date_str}-{domain}')
+
+                logger.info(f'{GREEN}SUCCESS {GREY}| {BLUE}{response.status} {GREY}| {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain}{GREEN}')
+                return True
             else:
-                logger.warning(f"Non-200 status code: {response.status} for {domain}")
                 return False
+        else:
+            logger.warning(f"Non-200 status code: {response.status} for {domain}")
+            return False
 
-        except asyncio.TimeoutError as e:
-            logger.info(f'{RED} TimeoutError {GREY}| --- | {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain} {RED}| {e}{RESET}')
-            raise
-        except aiohttp.ClientError as e:
-            logger.info(f'{RED} ClientError {GREY}| --- | {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain} {RED}| {e}{RESET}')
-            raise
-        except Exception as e:
-        
-            logger.info(f'{RED}Exception  {GREY}| --- | {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain} {RED}| {e}{RESET}')
-            raise
-        finally:
-            if session:
-                await session.close()
+    except asyncio.TimeoutError as e:
+        logger.info(f'{RED} TimeoutError {GREY}| --- | {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain} {RED}| {e}{RESET}')
+        raise
+    except aiohttp.ClientError as e:
+        logger.info(f'{RED} ClientError {GREY}| --- | {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain} {RED}| {e}{RESET}')
+        raise
+    except Exception as e:
+    
+        logger.info(f'{RED}Exception  {GREY}| --- | {PURPLE}{query_url.ljust(50)} {GREY}| {CYAN}{domain} {RED}| {e}{RESET}')
+        raise
+    finally:
+        if session:
+            await session.close()
 
 
 @asynccontextmanager

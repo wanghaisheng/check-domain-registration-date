@@ -24,7 +24,7 @@ def query_google_geventhttpclient(search_term):
     http_client = HTTPClient.from_url(url)
     try:
         http_client.get(url.request_uri)  # Use request_uri argument
-        return http_client.read_body()
+        return http_client.read()
     finally:
         http_client.close()
 

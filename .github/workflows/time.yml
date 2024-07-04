@@ -16,27 +16,10 @@ jobs:
         run: |
           sudo apt-get update      
           python -m pip install --upgrade pip
-          pip install gevent aiohttp urllib3
+          pip install gevent aiohttp urllib3 geventhttpclient
       - name: run demo
         run: |
           python  timecost.py
-      - name: Release
-        uses: marvinpinto/action-automatic-releases@latest
-        with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "${{ github.run_id }}"
-          prerelease: false
-          title: "${{ github.run_id }}"
-          files: |
-            output/*
-      - name: run demo
-        run: |
-          python  timecost.py
-        env:
-          colname: "${{ github.event.inputs.colname }}"
-          filename: "${{ github.event.inputs.filename }}"
-          counts: "${{ github.event.inputs.counts }}"
-
       - name: Release
         uses: marvinpinto/action-automatic-releases@latest
         with:

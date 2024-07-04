@@ -27,7 +27,17 @@ def query_google_geventhttpclient(search_term):
         return res.read()
     finally:
         http_client.close()
+url = URL("https://www.google.com")
+client = HTTPClient.from_url(url, concurrency=10)
 
+# Method using GeventHTTPClient
+def query_google_geventhttpclientwithresue(search_term):
+    url = URL(f'/search?q={search_term}')
+    try:
+        res=client.get(url.request_uri)  # Use request_uri argument
+        return res.read()
+    finally:
+        http_client.close()
 # Function to run tasks with concurrency using gevent pool
 def run_tasks_with_gevent(concurrency, total_tasks, search_term, query_method):
     pool_size = min(concurrency, total_tasks)
@@ -53,6 +63,10 @@ async def run_tasks_with_aiohttp(concurrency, total_tasks, search_term):
         if tasks:
             await asyncio.gather(*tasks)
 
+
+
+
+
 # Example usage: Running with 100 concurrent tasks for 1000 requests
 def main():
     total_requests = 1000
@@ -70,9 +84,17 @@ def main():
     geventhttpclient_time = time.time() - start_time
 
 
+
+    # Measure GeventHTTPClient time
+    start_time = time.time()
+    run_tasks_with_gevent(concurrency, total_requests, search_term, query_google_geventhttpclientwithresue)
+    geventhttpclient_time1 = time.time() - start_time
+
+    
     print(f"Time taken for {total_requests} requests with concurrency {concurrency}:")
     print(f"aiohttp: {aiohttp_time} seconds")
     print(f"GeventHTTPClient: {geventhttpclient_time} seconds")
+    print(f"GeventHTTPClient reuse: {geventhttpclient_time1} seconds")
 
 if __name__ == "__main__":
     main()

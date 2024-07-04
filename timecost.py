@@ -28,13 +28,6 @@ def query_google_geventhttpclient(search_term):
     finally:
         http_client.close()
 
-# Method using urllib3
-def query_google_urllib3(search_term):
-    http = urllib3.PoolManager()
-    url = GOOGLE_URL + search_term
-    response = http.request('GET', url)
-    return response.data.decode('utf-8')
-
 # Function to run tasks with concurrency using gevent pool
 def run_tasks_with_gevent(concurrency, total_tasks, search_term, query_method):
     pool_size = min(concurrency, total_tasks)
@@ -76,15 +69,10 @@ def main():
     run_tasks_with_gevent(concurrency, total_requests, search_term, query_google_geventhttpclient)
     geventhttpclient_time = time.time() - start_time
 
-    # Measure urllib3 time
-    start_time = time.time()
-    run_tasks_with_gevent(concurrency, total_requests, search_term, query_google_urllib3)
-    urllib3_time = time.time() - start_time
 
     print(f"Time taken for {total_requests} requests with concurrency {concurrency}:")
     print(f"aiohttp: {aiohttp_time} seconds")
     print(f"GeventHTTPClient: {geventhttpclient_time} seconds")
-    print(f"urllib3: {urllib3_time} seconds")
 
 if __name__ == "__main__":
     main()

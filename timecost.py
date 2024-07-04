@@ -37,8 +37,8 @@ def query_google_geventhttpclientwithresue(search_term):
         res=client.get(url.request_uri)  # Use request_uri argument
         return res.read()
     finally:
-        http_client.close()
-# Function to run tasks with concurrency using gevent pool
+        pass
+        # Function to run tasks with concurrency using gevent pool
 def run_tasks_with_gevent(concurrency, total_tasks, search_term, query_method):
     pool_size = min(concurrency, total_tasks)
     pool_obj = pool.Pool(size=pool_size)
@@ -89,7 +89,7 @@ def main():
     start_time = time.time()
     run_tasks_with_gevent(concurrency, total_requests, search_term, query_google_geventhttpclientwithresue)
     geventhttpclient_time1 = time.time() - start_time
-
+    client.close()
     
     print(f"Time taken for {total_requests} requests with concurrency {concurrency}:")
     print(f"aiohttp: {aiohttp_time} seconds")

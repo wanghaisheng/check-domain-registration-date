@@ -1,5 +1,7 @@
 import gevent
 from gevent import monkey, pool
+monkey.patch_all()
+
 import aiohttp
 import asyncio
 import time

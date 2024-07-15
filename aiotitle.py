@@ -75,7 +75,7 @@ filename='ahref-top'
 # filename='builtwith-top'
 filename = os.getenv("filename")
 
-folder_path='.'
+folder_path='./output'
 inputfilepath=filename + ".csv"
 # logger.add(f"{folder_path}/domain-index-ai.log")
 # print(domains)

@@ -274,11 +274,10 @@ async def lookup_domain_rdap(domain: str,proxy_url: str, semaphore: asyncio.Sema
 
             rawdata=data
             print(f'{domain}----{rawdata}')
-            # Locate the specific eventDate
-            for event in data.get("results", []):
-                
-                # logger.info("Found the event:", event)
-                creation_date_str = event.get("createdDate")
+            for event in data.get("events", []):
+                if event.get("eventAction") == "registration":
+                    print("Found the event:", event)
+                    creation_date_str = event.get("eventDate")
                 logger.info(creation_date_str)
             if creation_date_str:
                 data={'domain':domain,

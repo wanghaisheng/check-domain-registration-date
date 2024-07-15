@@ -1,0 +1,49 @@
+name: aio  domain titles
+"on":
+  workflow_dispatch:
+    inputs:
+      filename:
+        description: csv filename
+        type: enviroment
+        required: true
+      colname:
+        description: csv col name
+        type: enviroment
+        required: true
+      counts:
+        description: how many rows
+        type: number
+        required: false
+        
+jobs:
+  build-ubuntu:
+    runs-on: ubuntu-latest
+    environment: env
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: |
+          sudo apt-get update      
+          python -m pip install --upgrade pip
+          pip install -r dev.txt
+      - name: run demo
+        run: |
+          python  aiotitle.py
+        env:
+          colname: "${{ github.event.inputs.colname }}"
+          filename: "${{ github.event.inputs.filename }}"
+          counts: "${{ github.event.inputs.counts }}"
+
+      - name: Release
+        uses: marvinpinto/action-automatic-releases@latest
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "${{ github.run_id }}"
+          prerelease: false
+          title: "${{ github.run_id }}"
+          files: |
+            output/*

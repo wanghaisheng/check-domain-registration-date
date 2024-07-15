@@ -481,9 +481,10 @@ async def run_async_tasks():
                        )
         donedomains=df['domain'].to_list()
     else:
-        df=pd.read_csv('top-domains-1m.csv')
+        if os.path.exists('top-domains-1m.csv'):
+            df=pd.read_csv('top-domains-1m.csv')
 
-        donedomains=df['domain'].to_list()
+            donedomains=df['domain'].to_list()
 
     print(f'load donedomains:{donedomains}')
     valid_proxies=getlocalproxies()

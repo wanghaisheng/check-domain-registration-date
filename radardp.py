@@ -360,7 +360,7 @@ def cleandomain(domain):
 
 def process_domains_screensht(domains, outfile,counts):
     from DPhelper import DPHelper
-    browser=DPHelper(browser_path=None,HEADLESS=False)
+    browser=DPHelper(browser_path=None,HEADLESS=True)
     
 
 

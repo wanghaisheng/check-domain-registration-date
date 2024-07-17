@@ -361,6 +361,7 @@ def cleandomain(domain):
 def process_domains_screensht(domains, outfile,counts):
     from DPhelper import DPHelper
     browser=DPHelper(browser_path=browserpath,HEADLESS=True)
+    browser.bypass()
     
 
 

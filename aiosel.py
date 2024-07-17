@@ -57,7 +57,7 @@ RDAP_SERVERS = {}
 semaphore = asyncio.Semaphore(100)  # Allow up to 50 concurrent tasks
 # db_manager = DatabaseManager()
 
-filename='sel.csv'
+filename='sel'
 
 # filename='ahref-top'
 

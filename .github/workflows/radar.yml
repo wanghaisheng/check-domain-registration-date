@@ -39,6 +39,7 @@ jobs:
           colname: "${{ github.event.inputs.colname }}"
           filename: "${{ github.event.inputs.filename }}"
           counts: "${{ github.event.inputs.counts }}"
+          path:   "${{ steps.setup-chrome.outputs.chrome-path }} --version"
 
       - name: Release
         uses: marvinpinto/action-automatic-releases@latest

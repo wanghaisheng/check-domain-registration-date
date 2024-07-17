@@ -10,3 +10,4 @@ aiohttp_socks
 sqlalchemy-libsql
 python-dotenv
 sqlalchemy[asyncio]
+DrissionPage

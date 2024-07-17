@@ -1,4 +1,4 @@
-name: aio  domain titles
+name: radar  domain 
 "on":
   workflow_dispatch:
     inputs:

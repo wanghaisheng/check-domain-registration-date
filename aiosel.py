@@ -618,7 +618,7 @@ async def get_index_date(domain,valid_proxies):
     async with semaphore:
         url = url + sellerid + "?domain=1&seller=" + sellerid
 
-        retries = 4
+        retries = 1
         for attempt in range(1, retries + 1):
             try:
                 proxy_url =None

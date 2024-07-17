@@ -216,6 +216,8 @@ def submit_radar(browser,
             page=browser.driver.new_tab()
 
             # page = browser.driver.get_tab(tab)
+            browser.bypass(query_url)
+            
             page.get(query_url)    
             page.wait.load_start()
             if page.json:
@@ -361,7 +363,6 @@ def cleandomain(domain):
 def process_domains_screensht(domains, outfile,counts):
     from DPhelper import DPHelper
     browser=DPHelper(browser_path=browserpath,HEADLESS=True)
-    browser.bypass()
     
 
 

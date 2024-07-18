@@ -32,7 +32,15 @@ jobs:
           pip install -r dev.txt
       - name: run demo
         run: |
-          python  aiosel.py
+          while true; do
+            python aiosel.py
+            if [ $? -eq 0 ]; then
+              echo "All processing completed successfully"
+              break
+            else
+              echo "Processing interrupted. Restarting."
+            fi
+          done
         env:
           colname: "${{ github.event.inputs.colname }}"
           filename: "${{ github.event.inputs.filename }}"

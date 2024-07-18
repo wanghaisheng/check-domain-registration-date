@@ -11,6 +11,10 @@ from datetime import datetime
 import pandas as pd
 from DataRecorder import Recorder
 from dbhelper import *
+import pickle
+
+# Set the time limit (in seconds)
+TIME_LIMIT = 5 * 60 * 60  # 5 hours, to be safe
 
 # try:
 #     import aiofiles
@@ -729,73 +733,86 @@ async def prejson(folder_path):
 
 
 
-async def run_async_tasks():
-    tasks = []
-    df = pd.read_csv(inputfilepath,
-                    #  , encoding="ISO-8859-1"
-                    usecols=['sellerid']
-                     )
-    domains=df['sellerid'].to_list()
-    print(f'load domains:{len(domains)}')
-    donedomains=[]
+# Function to save checkpoint
+def save_checkpoint(state, filename='checkpoint.pkl'):
+    with open(filename, 'wb') as f:
+        pickle.dump(state, f)
 
+# Function to load checkpoint
+def load_checkpoint(filename='checkpoint.pkl'):
     try:
-        # dbdata=db_manager.read_domain_all()
+        with open(filename, 'rb') as f:
+            return pickle.load(f)
+    except FileNotFoundError:
+        return None
 
-        # for i in dbdata:
-        #     if i.indexat is not None:
-        #         donedomains.append(i.url)    
-        pass    
-    except Exception as e:
-        print(f'query error: {e}')
-    if os.path.exists(outfilepath):
-        df=pd.read_csv(outfilepath)
-        donedomains=df['sellerId'].to_list()
-    # else:
-        # df=pd.read_csv('top-domains-1m.csv')
-        # donedomains=df['sellerid'].to_list()
-    donedomains=list(set(donedomains))
-    print(f'load donedomains:{len(donedomains)}')
-    valid_proxies=getlocalproxies()
+async def run_async_tasks():
+    start_time = time.time()
+    
+    # Load checkpoint if it exists
+    state = load_checkpoint()
+    if state is None:
+        # Initialize state
+        df = pd.read_csv(inputfilepath, usecols=['sellerid'])
+        domains = df['sellerid'].to_list()
+        donedomains = []
+        if os.path.exists(outfilepath):
+            df = pd.read_csv(outfilepath)
+            donedomains = df['sellerId'].to_list()
+        donedomains = list(set(donedomains))
+        valid_proxies = getlocalproxies()
+        domains = list(set([cleandomain(i) for i in domains]) - set(donedomains))
+        state = {
+            'domains': domains,
+            'donedomains': donedomains,
+            'valid_proxies': valid_proxies,
+            'current_index': 0
+        }
+    else:
+        print("Resuming from checkpoint")
 
-    domains=list(set([cleandomain(i) for i in domains])-set(donedomains))
-    print(f'to be done {len(domains)}')
-    time.sleep(30)
-    cnts=0
-    for domain in domains:
-
-        domain=cleandomain(domain)
-        if os.path.exists(os.path.join(r'D:\Download\audio-visual\amazon\top10kseller',domain+'.json')):
-            cnts+=1
+    print(f'To be done: {len(state["domains"]) - state["current_index"]}')
+    
+    tasks = []
+    for i, domain in enumerate(state['domains'][state['current_index']:], start=state['current_index']):
+        domain = cleandomain(domain)
+        if os.path.exists(os.path.join(r'D:\Download\audio-visual\amazon\top10kseller', domain + '.json')):
             continue
-        if len(domain)<10:
-            cnts+=1
-
+        if len(domain) < 10:
             continue
-        if  domain not in donedomains:
-            print('add domain',domain)
-            task = asyncio.create_task(get_index_date(domain,valid_proxies))
+        if domain not in state['donedomains']:
+            print('add domain', domain)
+            task = asyncio.create_task(get_index_date(domain, state['valid_proxies']))
             tasks.append(task)
             if len(tasks) >= 100:
                 # Wait for the current batch of tasks to complete
                 await asyncio.gather(*tasks)
-                tasks = []            
+                tasks = []
+        
+        # Check if we're approaching the time limit
+        if time.time() - start_time > TIME_LIMIT:
+            print("Approaching time limit. Saving checkpoint and exiting.")
+            state['current_index'] = i + 1
+            save_checkpoint(state)
+            return False  # Indicate that we haven't finished
+        
     await asyncio.gather(*tasks)
-    print('ignore===========',cnts)
-# Example usage: Main coroutine
+    print('All tasks completed')
+    return True  # Indicate that we've finished all tasks
+
 async def main():
     start_time = time.time()
-    # await prejson('./json')
+    finished = await run_async_tasks()
+    print(f"Time taken: {time.time() - start_time} seconds")
+    return finished
 
-    await run_async_tasks()
-    print(f"Time taken for asynchronous execution with concurrency limited by semaphore: {time.time() - start_time} seconds")
-
-# Manually manage the event loop in Jupyter Notebook or other environments
 if __name__ == "__main__":
-    # logger.add('a-seller.log')
     loop = asyncio.get_event_loop()
     try:
-        loop.run_until_complete(main())
+        finished = loop.run_until_complete(main())
+        if finished:
+            print("All processing completed successfully")
+        else:
+            print("Processing interrupted due to time limit. Restart to continue.")
     finally:
         loop.close()
-    outfile.record()

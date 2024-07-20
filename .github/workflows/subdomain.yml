@@ -3,7 +3,7 @@ name: Install and Run Subwalker
 on:
   workflow_dispatch:
     inputs:
-      filename:
+      url:
         description: csv filename
         type: enviroment
         required: true
@@ -24,14 +24,10 @@ jobs:
       - name: Set execute permission on subwalker script
         run: chmod +x subwalker.sh
 
-      - name: Input URL to run subwalker with
-        uses: actions/inputs@v1
-        with:
-          url: ${{ inputs.url }}
 
       - name: Run subwalker with input URL
         run: |
-         ./subwalker.sh  "${{ github.event.inputs.colname }}"
+         ./subwalker.sh  "${{ github.event.inputs.url }}"
 
           echo "Output saved to: /opt/subwalker/subwalker.txt"
 

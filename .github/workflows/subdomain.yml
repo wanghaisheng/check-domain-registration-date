@@ -1,9 +1,13 @@
 name: Install and Run Subwalker
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+    inputs:
+      filename:
+        description: csv filename
+        type: enviroment
+        required: true
+
 jobs:
   run-subwalker:
     runs-on: ubuntu-latest

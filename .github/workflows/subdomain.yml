@@ -22,13 +22,12 @@ jobs:
         run: cd subwalker && ls
 
       - name: Set execute permission on subwalker script
-        run: chmod +x subwalker.sh
+        run: chmod +x ./subwalker.sh
 
 
       - name: Run subwalker with input URL
         run: |
          ./subwalker.sh  "${{ github.event.inputs.url }}"
-
           echo "Output saved to: /opt/subwalker/subwalker.txt"
 
       - name: Archive output

@@ -19,7 +19,7 @@ jobs:
         run: git clone https://github.com/m8sec/subwalker.git
 
       - name: Change to Subwalker directory
-        run: cd subwalker
+        run: cd subwalker && ls
 
       - name: Set execute permission on subwalker script
         run: chmod +x subwalker.sh

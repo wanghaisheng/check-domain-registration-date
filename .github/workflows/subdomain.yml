@@ -19,14 +19,9 @@ jobs:
         run: git clone https://github.com/m8sec/subwalker.git
 
       - name: Change to Subwalker directory
-        run: cd subwalker && ls
-
-      - name: Set execute permission on subwalker script
-        run: chmod +x ./subwalker.sh
-
-
-      - name: Run subwalker with input URL
         run: |
+         cd subwalker && ls
+         chmod +x ./subwalker.sh
          ./subwalker.sh  "${{ github.event.inputs.url }}"
           echo "Output saved to: /opt/subwalker/subwalker.txt"
 

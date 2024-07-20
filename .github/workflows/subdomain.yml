@@ -1,0 +1,37 @@
+name: Install and Run Subwalker
+
+on:
+  push:
+    branches:
+      - main
+jobs:
+  run-subwalker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Clone Subwalker
+        run: git clone https://github.com/m8sec/subwalker.git
+
+      - name: Change to Subwalker directory
+        run: cd subwalker
+
+      - name: Set execute permission on subwalker script
+        run: chmod +x subwalker.sh
+
+      - name: Input URL to run subwalker with
+        uses: actions/inputs@v1
+        with:
+          url: ${{ inputs.url }}
+
+      - name: Run subwalker with input URL
+        run: |
+         ./subwalker.sh ${{ inputs.url }}
+          echo "Output saved to: /opt/subwalker/subwalker.txt"
+
+      - name: Archive output
+        uses: actions/upload-artifact@v2
+        with:
+          name: subwalker-output
+          path: /opt/subwalker/subwalker.txt

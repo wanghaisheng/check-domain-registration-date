@@ -24,9 +24,12 @@ jobs:
          chmod +x ./subwalker.sh
          ./subwalker.sh  "${{ github.event.inputs.url }}"
           echo "Output saved to: /opt/subwalker/subwalker.txt"
-
-      - name: Archive output
-        uses: actions/upload-artifact@v2
+      - name: Release
+        uses: marvinpinto/action-automatic-releases@latest
         with:
-          name: subwalker-output
-          path: /opt/subwalker/subwalker.txt
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "${{ github.run_id }}"
+          prerelease: false
+          title: "${{ github.run_id }}"
+          files: |
+           /opt/subwalker/subwalker.txt

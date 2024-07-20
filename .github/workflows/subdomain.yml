@@ -31,7 +31,8 @@ jobs:
 
       - name: Run subwalker with input URL
         run: |
-         ./subwalker.sh ${{ inputs.url }}
+         ./subwalker.sh  "${{ github.event.inputs.colname }}"
+
           echo "Output saved to: /opt/subwalker/subwalker.txt"
 
       - name: Archive output

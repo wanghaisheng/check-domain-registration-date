@@ -434,7 +434,7 @@ async def get_priceplan(domain,valid_proxies):
                         elif response.status==404:
                             break
                         else:
-                            print(f"Task {url} failed on attempt {attempt}.{proxy} Status code: {response.status}{await response.text()}")
+                            # print(f"Task {url} failed on attempt {attempt}.{proxy} Status code: {response.status}{await response.text()}")
 
                             if 'Attention Required!' in data or 'Cloudflare Ray ID' in data or 'Sorry, you have been blocked' in data:
                                 outcffile.add_data(domain)   

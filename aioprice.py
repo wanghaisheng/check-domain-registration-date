@@ -404,26 +404,36 @@ async def extract_price(response,domain):
 
 
 
-# Function to simulate a task asynchronously
 async def get_priceplan(domain,valid_proxies):
     async with semaphore:
         url =f'https://{domain}'       
-        retries =1
+        retries = 1
         for attempt in range(1, retries + 1):
             try:
                 proxy_url=None
 
+                if attempt==2:
+                    if valid_proxies:
+                        proxy_url=random.choice(valid_proxies)
+                elif attempt==3:
+                    # proxy_url=await get_proxy_proxypool()
+                    proxy_url = "socks5://127.0.0.1:1080"  # Example SOCKS5 proxy URL
+                elif attempt==4:
+                    proxy_url=await get_proxy()
+                    # proxy_url = f"http://{proxy_url}"  # Example SOCKS5 proxy URL
+
+
                 # proxy_url = "http://127.0.0.1:1080"  # Example SOCKS5 proxy URL
                 connector = aiohttp_socks.ProxyConnector.from_url(proxy_url) if proxy_url and proxy_url.startswith("socks") else None
                 proxy=proxy_url if proxy_url and 'http' in proxy_url else None
-                print('===proxy_url',proxy,proxy_url)
+                logger.info('===proxy_url',proxy,proxy_url)
                 async with aiohttp.ClientSession(connector=connector) as session:                
                     async with session.get(url,proxy=proxy) as response:
                         if response.status == 200:
                             data=await response.text()
                             if 'Attention Required!' in data or 'Cloudflare Ray ID' in data or 'Sorry, you have been blocked' in data:
                                 outcffile.add_data(domain)   
-                                break
+                                return
               
                             data = await extract_price(response,domain)
                             if data:
@@ -434,22 +444,30 @@ async def get_priceplan(domain,valid_proxies):
                         elif response.status==404:
                             break
                         else:
-                            # print(f"Task {url} failed on attempt {attempt}.{proxy} Status code: {response.status}{await response.text()}")
+                            logger.info(f"Task {url} failed on attempt {attempt}.{proxy} Status code: {response.status}{await response.text()}")
 
                             if 'Attention Required!' in data or 'Cloudflare Ray ID' in data or 'Sorry, you have been blocked' in data:
                                 outcffile.add_data(domain)   
-                                break
+
+                                return
             except aiohttp.ClientConnectionError:
                 if attempt < retries:
-                    print(f"Task {url} failed on attempt {attempt}.{proxy} ClientConnectionError Retrying...")
+                    logger.info(f"Task {url} failed on attempt {attempt}.{proxy} ClientConnectionError Retrying...")
                 else:
-                    print(f"Task {url} failed on all {retries} attempts. ClientConnectionError.")
+                    logger.info(f"Task {url} failed on all {retries} attempts. ClientConnectionError.")
+                    # if 'Attention Required!' in data or 'Cloudflare Ray ID' in data or 'Sorry, you have been blocked' in data:
+                    #     outcffile.add_data(domain)   
 
+                    #     return
             except Exception:
                 if attempt < retries:
-                    print(f"Task {url} failed on attempt {attempt}. Exception Retrying...")
+                    logger.info(f"Task {url} failed on attempt {attempt}. Exception Retrying...")
                 else:
-                    print(f"Task {url} failed on all {retries} attempts. Exception.")
+                    logger.info(f"Task {url} failed on all {retries} attempts. Exception.")
+                    # if 'Attention Required!' in data or 'Cloudflare Ray ID' in data or 'Sorry, you have been blocked' in data:
+                    #     outcffile.add_data(domain)   
+
+                    #     return
 
 
 # To run the async function, you would do the following in your main code or script:

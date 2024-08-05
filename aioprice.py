@@ -80,6 +80,16 @@ filename='toolify-top500'
 # filename='builtwith-top'
 filename = "./tranco_Z377G"
 filename="domain-1year"
+filename = os.getenv("filename")
+colname = os.getenv("colname")
+
+
+#  filename = "100"
+counts = os.getenv("counts")
+try:
+    counts=int(counts)
+except:
+    counts=0
 folder_path='.'
 inputfilepath=filename + ".csv"
 # logger.add(f"{folder_path}/domain-index-ai.log")
@@ -572,6 +582,8 @@ async def run_async_tasks():
     donedomains=[element for element in domains if element  in alldonedomains]
     print(f'load done domains {len(donedomains)}')
     tododomains=list(set([cleandomain(i) for i in domains])-set(donedomains))
+    if counts!=0:
+        tododomains=tododomains[:counts]
     print(f'to be done {len(tododomains)}')
     for domain in tododomains:
 

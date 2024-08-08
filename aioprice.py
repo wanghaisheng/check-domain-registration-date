@@ -30,7 +30,7 @@ test_url = "http://example.com"
 MAX_RETRIES = 3
 INITIAL_DELAY = 1
 MAX_DELAY = 10
-
+valid_proxies=[]
 lang_names = {}
 tld_types = {}
 country_cctlds_symbols = {}
@@ -55,12 +55,12 @@ filename = "domain-1year"
 # filename = "domain-ai"
 # filename='top1000ai'
 # filename='.reports/character.ai-organic-competitors--.csv'
-folder_path = "."
+folder_path = "./prices"
 inputfilepath = filename + ".csv"
 # logger.add(f"{folder_path}/domain-index-ai.log")
 # logger.info(domains)
 outfilepath = inputfilepath.replace(".csv", "-prices.csv")
-# outfilepath = "domain-ai-price.csv"
+outfilepath = "top-domains-1m-prices.csv"
 
 outfile = Recorder(folder_path + "/" + outfilepath, cache_size=10)
 outcffilepath = inputfilepath.replace(".csv", "-prices-cfblock.csv")
@@ -110,7 +110,10 @@ def get_tld(domain: str):
     """Extracts the top-level domain from a domain name."""
     parts = domain.split(".")
     return parts[-1]
-
+def mknewdir(dirname):
+    if not os.path.exists(f"{dirname}"):
+        nowdir = os.getcwd()
+        os.mkdir(nowdir + f"\\{dirname}")
 
 async def get_proxy():
     query_url = "http://demo.spiderpy.cn/get"
@@ -302,7 +305,7 @@ async def extract_price(html_content, domain):
             webpage_text = markdownify.MarkdownConverter(newline_style='backslash').convert_soup(body_elm)
         else:
             webpage_text = markdownify.MarkdownConverter().convert_soup(soup)
-        mdpath='prices/md'+domain+'.md'
+        mdpath='prices/md/'+domain+'.md'
         if not  os.path.exists(mdpath):
             with open(
                 mdpath, "w", encoding="utf8"
@@ -365,16 +368,16 @@ async def fetch_data(url, valid_proxies=None, data_format="json", cookies=None):
         try:
             logger.debug("staaartt to get data")
             proxy_url = None  # Example SOCKS5 proxy URL
-            # proxy_url = "socks5://127.0.0.1:1080"  # Example SOCKS5 proxy URL
+            proxy_url = "socks5://127.0.0.1:1080"  # Example SOCKS5 proxy URL
 
-            # if attempt == 3:
-            #     if valid_proxies:
-            #         proxy_url = random.choice(valid_proxies)
-            # elif attempt == 2:
-            #     # proxy_url=await get_proxy_proxypool()
-            #     proxy_url = "socks5://127.0.0.1:1080"  # Example SOCKS5 proxy URL
-            # elif attempt == 4:
-            #     proxy_url = await get_proxy()
+            if attempt == 3:
+                if valid_proxies:
+                    proxy_url = random.choice(valid_proxies)
+            elif attempt == 2:
+                # proxy_url=await get_proxy_proxypool()
+                proxy_url = "socks5://127.0.0.1:1080"  # Example SOCKS5 proxy URL
+            elif attempt == 4:
+                proxy_url = await get_proxy()
             # proxy_url = "socks5://127.0.0.1:9050"  # Example SOCKS5 proxy URL
             # pip install httpx[socks]
             async with httpx.AsyncClient(proxy=proxy_url) as client:
@@ -493,7 +496,7 @@ async def getlocalproxies():
             valid_proxies.append(proxy_url)
     valid_proxies = raw_proxies
     await asyncio.gather(*checktasks)
-    valid_proxies=raw_proxies
+    # valid_proxies=raw_proxies
 
     logger.info(f"clean count:{len(valid_proxies)}")
     # return valid_proxies
@@ -523,7 +526,7 @@ async def run_async_tasks():
     # except Exception as e:
     #     logger.info(f'query error: {e}')
     alldonedomains = []
-    outfilepath = "domain-ai-price.csv"
+    # outfilepath = "domain-ai-prices.csv"
 
     if os.path.exists(outfilepath):
         df = pd.read_csv(
@@ -538,7 +541,6 @@ async def run_async_tasks():
     alldonedomains = set(alldonedomains)
 
     logger.info(f"load alldonedomains:{len(list(alldonedomains))}")
-    valid_proxies = getlocalproxies()
 
     donedomains = [element for element in domains if element in alldonedomains]
     logger.info(f"load done domains {len(donedomains)}")
@@ -582,8 +584,14 @@ async def run_async_tasks():
 # Example usage: Main coroutine
 async def main():
     start_time = time.time()
+    mknewdir('prices')
+    mknewdir('prices/html')
+    mknewdir('prices/md')
+
     get_tld_types()
     get_cctld_symbols()
+    await getlocalproxies()
+
     await run_async_tasks()
     logger.info(
         f"Time taken for asynchronous execution with concurrency limited by semaphore: {time.time() - start_time} seconds"

@@ -11,3 +11,9 @@ sqlalchemy-libsql
 python-dotenv
 sqlalchemy[asyncio]
 DrissionPage
+ua-generator
+httpx[socks]
+py3langid
+trafilatura
+markdownify
+httpx-socks

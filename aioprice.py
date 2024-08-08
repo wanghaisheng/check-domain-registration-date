@@ -368,18 +368,19 @@ async def fetch_data(url, valid_proxies=None, data_format="json", cookies=None):
         try:
             logger.debug("staaartt to get data")
             proxy_url = None  # Example SOCKS5 proxy URL
-            proxy_url = "socks5://127.0.0.1:1080"  # Example SOCKS5 proxy URL
+            # proxy_url = "socks5://127.0.0.1:1080"  # Example SOCKS5 proxy URL
 
-            if attempt == 3:
-                if valid_proxies:
-                    proxy_url = random.choice(valid_proxies)
-            elif attempt == 2:
-                # proxy_url=await get_proxy_proxypool()
-                proxy_url = "socks5://127.0.0.1:1080"  # Example SOCKS5 proxy URL
-            elif attempt == 4:
-                proxy_url = await get_proxy()
-            # proxy_url = "socks5://127.0.0.1:9050"  # Example SOCKS5 proxy URL
-            # pip install httpx[socks]
+            # if attempt == 3:
+            #     if valid_proxies:
+            #         proxy_url = random.choice(valid_proxies)
+            # elif attempt == 2:
+            #     # proxy_url=await get_proxy_proxypool()
+            #     proxy_url = "socks5://127.0.0.1:1080"  # Example SOCKS5 proxy URL
+            # elif attempt == 4:
+            #     proxy_url = await get_proxy()
+            # # proxy_url = "socks5://127.0.0.1:9050"  # Example SOCKS5 proxy URL
+            # # pip install httpx[socks
+            
             async with httpx.AsyncClient(proxy=proxy_url) as client:
                 response = await client.get(url)
                 response.raise_for_status()
@@ -548,6 +549,13 @@ async def run_async_tasks():
     logger.info(f"to be done {len(tododomains)}")
     import time
     time.sleep(60)
+    counts=len(tododomains)    
+    try:
+        counts = os.getenv("counts")
+        
+        counts=int(counts)
+    except:
+        pass
     for domain in tododomains:
 
         domain = cleandomain(domain)

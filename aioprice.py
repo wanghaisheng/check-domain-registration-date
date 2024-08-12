@@ -363,7 +363,7 @@ async def get_priceplan(
 # Function to simulate a task asynchronously
 async def fetch_data(url, valid_proxies=None, data_format="json", cookies=None):
 
-    retries = 4
+    retries = 1
     for attempt in range(1, retries + 1):
         try:
             logger.debug("staaartt to get data")

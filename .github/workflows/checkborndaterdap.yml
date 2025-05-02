@@ -1,24 +1,24 @@
-name: query  domain born date rdap
-"on":
+name: query domain born date rdap
+
+on:
   workflow_dispatch:
     inputs:
-      filename:
+      input_csv:
         description: csv filename
-        type: enviroment
         required: true
-      colname:
+        default: domains.csv
+      domain_col:
         description: csv col name
-        type: enviroment
         required: true
-      counts:
-        description: how many rows
-        type: number
+        default: domain
+      batch_size:
+        description: batch size
         required: false
-        
+        default: "1000"
+
 jobs:
   build-ubuntu:
     runs-on: ubuntu-latest
-    environment: env
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python 3.10
@@ -27,16 +27,14 @@ jobs:
           python-version: "3.10"
       - name: Install dependencies
         run: |
-          sudo apt-get update      
-          python -m pip install --upgrade pip
-          pip install -r dev.txt
-      - name: run demo
+          pip install -r requirements.txt
+      - name: Run borndate rdap batch
         run: |
-          python  check_born_date_rdap.py
+          python scripts/domain_borndate_rdap.py
         env:
-          colname: "${{ github.event.inputs.colname }}"
-          filename: "${{ github.event.inputs.filename }}"
-          counts: "${{ github.event.inputs.counts }}"
+          input_csv: ${{ github.event.inputs.input_csv }}
+          domain_col: ${{ github.event.inputs.domain_col }}
+          BATCH_SIZE: ${{ github.event.inputs.batch_size }}
 
       - name: Release
         uses: marvinpinto/action-automatic-releases@latest

@@ -1,0 +1,94 @@
+name: Domain Batch Tasks
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # 每小时整点运行一次
+  workflow_dispatch:
+    inputs:
+      input_csv:
+        description: csv filename
+        required: true
+        default: paypal-domains.csv
+      domain_col:
+        description: csv col name
+        required: true
+        default: domain
+      batch_size:
+        description: batch size
+        required: false
+        default: "1000"
+
+jobs:
+  run-tasks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run indexdate batch
+        run: |
+          python scripts/domain_indexdate.py
+        env:
+          input_csv: ${{ github.event.inputs.input_csv }}
+          domain_col: ${{ github.event.inputs.domain_col }}
+          BATCH_SIZE: ${{ github.event.inputs.batch_size }}
+
+      - name: Run borndate revved batch
+        run: |
+          python scripts/domain_borndate_revved.py
+        env:
+          input_csv: ${{ github.event.inputs.input_csv }}
+          domain_col: ${{ github.event.inputs.domain_col }}
+          BATCH_SIZE: ${{ github.event.inputs.batch_size }}
+
+      - name: Run borndate rdap batch
+        run: |
+          python scripts/domain_borndate_rdap.py
+        env:
+          input_csv: ${{ github.event.inputs.input_csv }}
+          domain_col: ${{ github.event.inputs.domain_col }}
+          BATCH_SIZE: ${{ github.event.inputs.batch_size }}
+
+      - name: Run title/description batch
+        run: |
+          python scripts/domain_title_des.py
+        env:
+          input_csv: ${{ github.event.inputs.input_csv }}
+          domain_col: ${{ github.event.inputs.domain_col }}
+          BATCH_SIZE: ${{ github.event.inputs.batch_size }}
+
+      - name: Run price batch
+        run: |
+          python scripts/domain_price.py
+        env:
+          input_csv: ${{ github.event.inputs.input_csv }}
+          domain_col: ${{ github.event.inputs.domain_col }}
+          BATCH_SIZE: ${{ github.event.inputs.batch_size }}
+
+      - name: Commit and push results (before retry)
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+          git add results_* *_progress.txt failed_domains*.txt
+          git commit -m 'Update results, progress, and failed domains before retry' || echo 'No changes to commit'
+          git push
+
+      - name: Retry failed domains with fresh socks5 proxies
+        run: |
+          python scripts/retry_failed_with_proxy.py
+
+      - name: Commit and push retry results
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+          git add retry_failed_results.csv failed_domains*.txt
+          git commit -m 'Update retry results and failed domains after retry' || echo 'No changes to commit'
+          git push 

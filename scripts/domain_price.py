@@ -41,9 +41,9 @@ async def fetch_price(session, domain):
             async with session.get(url, timeout=15) as resp:
                 html = await resp.text()
                 md = extract_markdown_from_html(html)
-                price_info = extract_price_from_markdown_with_api(md, API_URL, api_key=API_KEY)
-                logging.info(f"{domain} | price_info: {price_info}")
-                return domain, price_info
+                price = extract_price_from_markdown_with_api(md, API_URL, api_key=API_KEY)
+                logging.info(f"{domain} | price: {price}")
+                return domain, price
         except Exception as e:
             logging.warning(f"Attempt {attempt} failed for {domain}: {e}")
             if attempt == RETRY:
@@ -64,7 +64,7 @@ for batch_start in range(last_id, total, BATCH_SIZE):
     logging.info(f'Processing {batch_start} - {batch_end}')
     batch_results = asyncio.run(process_batch(batch_domains))
     result_file = os.path.join(RESULT_DIR, f'price_{batch_start}_{batch_end}.csv')
-    pd.DataFrame(batch_results, columns=['domain', 'price_info']).to_csv(result_file, index=False)
+    pd.DataFrame(batch_results, columns=['domain', 'price']).to_csv(result_file, index=False)
     with open(PROGRESS_FILE, 'w') as f:
         f.write(str(batch_end))
     logging.info(f'Saved {result_file}, progress updated to {batch_end}') 

@@ -32,10 +32,10 @@ df = pd.read_csv(INPUT_CSV)
 domains = df[DOMAIN_COL].tolist()
 total = len(domains)
 
-async def fetch_borndate(domain):
+async def fetch_borndate(domain, session):
     for attempt in range(1, RETRY+1):
         try:
-            borndate = await lookup_domain_borndate(domain, revved_query_url, revved_parse_borndate)
+            borndate = await lookup_domain_borndate(domain, revved_query_url, revved_parse_borndate, session=session)
             logging.info(f"{domain} | borndate: {borndate}")
             return domain, borndate
         except Exception as e:
@@ -46,9 +46,10 @@ async def fetch_borndate(domain):
 
 async def process_batch(batch_domains):
     results = []
-    tasks = [fetch_borndate(d) for d in batch_domains]
-    for r in await asyncio.gather(*tasks):
-        results.append(r)
+    async with aiohttp.ClientSession() as session:
+        tasks = [fetch_borndate(d, session) for d in batch_domains]
+        for r in await asyncio.gather(*tasks):
+            results.append(r)
     return results
 
 for batch_start in range(last_id, total, BATCH_SIZE):

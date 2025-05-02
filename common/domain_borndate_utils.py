@@ -6,17 +6,18 @@ async def lookup_domain_borndate(
     query_url_func: Callable[[str], str],
     parse_borndate_func: Callable[[dict], Optional[str]],
     proxy_url: Optional[str] = None,
-    session_factory: Optional[Callable[[], aiohttp.ClientSession]] = None,
+    session: Optional[aiohttp.ClientSession] = None,
     timeout: int = 30,
 ) -> Optional[str]:
     """
     通用的域名born date查询方法。
     - query_url_func: 传入domain返回查询url
     - parse_borndate_func: 传入json dict返回born date字符串
-    - session_factory: 可选，返回aiohttp.ClientSession
+    - session: 必须由调用方创建和关闭
     """
     url = query_url_func(domain)
-    session = await session_factory() if session_factory else aiohttp.ClientSession()
+    if session is None:
+        raise ValueError("session must be provided and managed by the caller")
     try:
         async with session.get(url, proxy=proxy_url, timeout=timeout) as response:
             if response.status == 200:
@@ -24,9 +25,6 @@ async def lookup_domain_borndate(
                 return parse_borndate_func(data)
     except Exception as e:
         print(f"lookup_domain_borndate error: {e}")
-    finally:
-        if session_factory is not None:
-            await session.close()
     return None
 
 # Revved专用

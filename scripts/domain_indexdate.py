@@ -13,6 +13,7 @@ import logging
 from aiohttp_socks import ProxyConnector
 import itertools
 import requests
+import re
 
 BATCH_SIZE = 10000
 PROGRESS_FILE = 'indexdate_progress.txt'
@@ -47,12 +48,22 @@ domains = df[DOMAIN_COL].tolist()
 
 total = len(domains)
 
+def is_valid_proxy(proxy):
+    m = re.match(r'^([0-9]{1,3}\.){3}[0-9]{1,3}:(\d{1,5})$', proxy)
+    if not m:
+        return False
+    port = int(proxy.split(':')[1])
+    return 1 <= port <= 65535
+
 # 拉取 SOCKS5 代理池
 PROXY_LIST_URL = 'https://raw.githubusercontent.com/officialputuid/KangProxy/KangProxy/socks5/socks5.txt'
 try:
-    proxy_list = requests.get(PROXY_LIST_URL, timeout=10).text.split()
+    raw_proxies = requests.get(PROXY_LIST_URL, timeout=10).text.split()
+    proxy_list = [p for p in raw_proxies if is_valid_proxy(p)]
     if not proxy_list:
-        raise Exception('No proxies fetched!')
+        raise Exception('No valid proxies fetched!')
+    if len(proxy_list) < len(raw_proxies):
+        logging.warning(f"Filtered out {len(raw_proxies) - len(proxy_list)} invalid proxies.")
 except Exception as e:
     logging.error(f'Failed to fetch proxy list: {e}')
     proxy_list = ['127.0.0.1:1080']  # fallback

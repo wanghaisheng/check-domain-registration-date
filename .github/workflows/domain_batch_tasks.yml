@@ -77,7 +77,7 @@ jobs:
         run: |
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
-          git add results_* *_progress.txt failed_domains*.txt
+          git add results_* *_progress.txt
           git commit -m 'Update results, progress, and failed domains before retry' || echo 'No changes to commit'
           git push
 

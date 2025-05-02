@@ -6,5 +6,6 @@ requests>=2.25.0
 loguru>=0.7.0
 beautifulsoup4>=4.9.0
 # markitdown为可选依赖，如需html转md请取消注释
-# markitdown[all]>=0.1.0
+markitdown[all]>=0.1.0
 # 前端viewer用papaparse, 仅需在html中cdn引入，无需pip安装 
+PySocks

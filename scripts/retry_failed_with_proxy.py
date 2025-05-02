@@ -3,6 +3,7 @@ import asyncio
 import aiohttp
 import pandas as pd
 from aiohttp_socks import ProxyConnector
+from common.proxy_utils import get_shared_valid_proxies
 
 FAILED_FILE = 'failed_domains.txt'
 RETRY_RESULT_FILE = 'retry_failed_results.csv'
@@ -13,8 +14,8 @@ with open(FAILED_FILE, 'r') as f:
     failed_domains = [line.strip() for line in f if line.strip()]
 
 # 2. 获取最新socks5代理列表
-proxy_list = requests.get(PROXY_LIST_URL).text.split()
-proxy_cycle = iter(proxy_list)
+proxy_list = get_shared_valid_proxies(max_count=100)
+proxy_cycle = iter([p.replace('socks5://', '') for p in proxy_list])
 
 async def fetch_with_proxy(domain, proxy):
     url = f'https://{domain}'

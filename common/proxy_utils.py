@@ -3,6 +3,16 @@ import os
 import json
 from concurrent.futures import ThreadPoolExecutor
 import re
+import time
+
+SHARED_PROXY_CACHE = 'shared_valid_proxies.txt'
+SHARED_PROXY_CACHE_TTL = 3600  # 1 hour
+SHARED_PROXY_LIST_URLS = [
+    'https://raw.githubusercontent.com/officialputuid/KangProxy/KangProxy/socks5/socks5.txt',
+    'https://raw.githubusercontent.com/hookzof/socks5_list/master/proxy.txt',
+    'https://raw.githubusercontent.com/dpangestuw/Free-Proxy/refs/heads/main/socks5_proxies.txt',
+    'https://github.com/MuRongPIG/Proxy-Master/raw/main/socks5_checked.txt',
+]
 
 def get_proxy():
     try:
@@ -118,4 +128,24 @@ def get_valid_proxies_from_urls(urls, max_count=100):
             valid.append(proxy)
             if len(valid) >= max_count:
                 break
-    return valid 
+    return valid
+
+def get_shared_valid_proxies(max_count=100, force_refresh=False):
+    """
+    Fetch and validate proxies from all sources, cache result, and share between scripts.
+    Only re-validate if cache is older than TTL or force_refresh is True.
+    """
+    if not force_refresh and os.path.exists(SHARED_PROXY_CACHE):
+        mtime = os.path.getmtime(SHARED_PROXY_CACHE)
+        if time.time() - mtime < SHARED_PROXY_CACHE_TTL:
+            with open(SHARED_PROXY_CACHE, 'r') as f:
+                proxies = [line.strip() for line in f if line.strip()]
+                if proxies:
+                    return proxies[:max_count]
+    # Fetch and validate
+    proxies = get_valid_proxies_from_urls(SHARED_PROXY_LIST_URLS, max_count=max_count)
+    if proxies:
+        with open(SHARED_PROXY_CACHE, 'w') as f:
+            for p in proxies:
+                f.write(p + '\n')
+    return proxies 

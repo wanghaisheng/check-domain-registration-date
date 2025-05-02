@@ -14,7 +14,7 @@ from aiohttp_socks import ProxyConnector
 import itertools
 import requests
 import re
-from common.proxy_utils import get_valid_proxies_from_urls
+from common.proxy_utils import get_shared_valid_proxies
 
 BATCH_SIZE = 10000
 PROGRESS_FILE = 'indexdate_progress.txt'
@@ -56,16 +56,8 @@ def is_valid_proxy(proxy):
     port = int(proxy.split(':')[1])
     return 1 <= port <= 65535
 
-# 拉取 SOCKS5 代理池
-PROXY_LIST_URLS = [
-    'https://raw.githubusercontent.com/officialputuid/KangProxy/KangProxy/socks5/socks5.txt',
-    'https://raw.githubusercontent.com/hookzof/socks5_list/master/proxy.txt',
-    'https://raw.githubusercontent.com/dpangestuw/Free-Proxy/refs/heads/main/socks5_proxies.txt',
-    'https://github.com/MuRongPIG/Proxy-Master/raw/main/socks5_checked.txt',
-]
-
-logging.info('Fetching and validating proxies from multiple sources...')
-proxy_list = get_valid_proxies_from_urls(PROXY_LIST_URLS, max_count=100)
+logging.info('Fetching and validating proxies from shared pool...')
+proxy_list = get_shared_valid_proxies(max_count=100)
 if not proxy_list:
     logging.error('No valid proxies could access Google! Falling back to 127.0.0.1:1080')
     proxy_list = ['socks5://127.0.0.1:1080']

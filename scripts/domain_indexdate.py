@@ -21,8 +21,10 @@ LOG_FILE = 'indexdate.log'
 ensure_dir_exists(RESULT_DIR)
 setup_logging(LOG_FILE)
 
-INPUT_CSV = os.getenv('input_csv', 'domains.csv')
-DOMAIN_COL = os.getenv('domain_col', 'domain')
+INPUT_CSV = os.getenv('input_csv') or 'domains.csv'
+DOMAIN_COL = os.getenv('domain_col') or 'domain'
+logging.info(f'INPUT_CSV: {INPUT_CSV}, DOMAIN_COL: {DOMAIN_COL}')
+
 RETRY = 3
 GOOGLE_PROXY = os.getenv('GOOGLE_PROXY', 'socks5://127.0.0.1:1080')
 
@@ -34,7 +36,13 @@ else:
     last_id = 0
 
 # 读取任务
-df = pd.read_csv(INPUT_CSV)
+try:
+    df = pd.read_csv(INPUT_CSV)
+    logging.info(f'Successfully loaded {INPUT_CSV}, total rows: {len(df)}')
+except Exception as e:
+    logging.error(f'Failed to load {INPUT_CSV}: {e}')
+    raise
+
 domains = df[DOMAIN_COL].tolist()
 
 total = len(domains)

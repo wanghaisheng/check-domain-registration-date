@@ -11,6 +11,8 @@ import asyncio
 import aiohttp
 import logging
 from aiohttp_socks import ProxyConnector
+import itertools
+import requests
 
 BATCH_SIZE = 10000
 PROGRESS_FILE = 'indexdate_progress.txt'
@@ -37,28 +39,40 @@ domains = df[DOMAIN_COL].tolist()
 
 total = len(domains)
 
-async def fetch_indexdate(session, domain):
-    url = f'https://www.google.com/search?q=About+{domain}&tbm=ilp'
-    for attempt in range(1, RETRY+1):
+# 拉取 SOCKS5 代理池
+PROXY_LIST_URL = 'https://raw.githubusercontent.com/officialputuid/KangProxy/KangProxy/socks5/socks5.txt'
+try:
+    proxy_list = requests.get(PROXY_LIST_URL, timeout=10).text.split()
+    if not proxy_list:
+        raise Exception('No proxies fetched!')
+except Exception as e:
+    logging.error(f'Failed to fetch proxy list: {e}')
+    proxy_list = ['127.0.0.1:1080']  # fallback
+proxy_cycle = itertools.cycle(proxy_list)
+
+async def fetch_indexdate(domain, max_retries=3):
+    for attempt in range(1, max_retries+1):
+        proxy = next(proxy_cycle)
+        proxy_url = f'socks5://{proxy}'
+        connector = ProxyConnector.from_url(proxy_url)
         try:
-            async with session.get(url, timeout=10, proxy=GOOGLE_PROXY) as resp:
-                html = await resp.text()
-                indexdate = extract_indexdate_from_google_html(html)
-                logging.info(f"{domain} | indexdate: {indexdate}")
-                return domain, indexdate
+            async with aiohttp.ClientSession(connector=connector) as session:
+                url = f'https://www.google.com/search?q=About+{domain}&tbm=ilp'
+                async with session.get(url, timeout=10) as resp:
+                    html = await resp.text()
+                    indexdate = extract_indexdate_from_google_html(html)
+                    logging.info(f"{domain} | indexdate: {indexdate} | proxy: {proxy}")
+                    return domain, indexdate
         except Exception as e:
-            logging.warning(f"Attempt {attempt} failed for {domain}: {e}")
-            if attempt == RETRY:
-                return domain, f'error: {e}'
+            logging.warning(f"Attempt {attempt} failed for {domain} with proxy {proxy}: {e}")
             await asyncio.sleep(1)
+    return domain, f'error: all proxies failed'
 
 async def process_batch(start_id, batch_domains):
     results = []
-    connector = ProxyConnector.from_url(GOOGLE_PROXY) if GOOGLE_PROXY else None
-    async with aiohttp.ClientSession(connector=connector) as session:
-        tasks = [fetch_indexdate(session, d) for d in batch_domains]
-        for r in await asyncio.gather(*tasks):
-            results.append(r)
+    tasks = [fetch_indexdate(d) for d in batch_domains]
+    for r in await asyncio.gather(*tasks):
+        results.append(r)
     return results
 
 for batch_start in range(last_id, total, BATCH_SIZE):

@@ -89,10 +89,11 @@ def validate_proxy(proxy, test_url='https://www.google.com', timeout=8):
     """
     Validate a socks5 proxy by trying to access Google. Return True if accessible.
     """
+    import socks
+    import socket
+    import importlib
+    from urllib.request import urlopen
     try:
-        import socks
-        import socket
-        from urllib.request import urlopen
         proxy_host, proxy_port = proxy.replace('socks5://', '').split(':')
         proxy_port = int(proxy_port)
         socks.set_default_proxy(socks.SOCKS5, proxy_host, proxy_port)
@@ -103,8 +104,6 @@ def validate_proxy(proxy, test_url='https://www.google.com', timeout=8):
     except Exception:
         return False
     finally:
-        # Reset socket
-        import importlib
         importlib.reload(socket)
     return False
 

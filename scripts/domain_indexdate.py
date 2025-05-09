@@ -23,7 +23,10 @@ LOG_FILE = 'indexdate.log'
 ensure_dir_exists(RESULT_DIR)
 setup_logging(LOG_FILE)
 
-INPUT_CSV = os.getenv('input_csv') or 'domains.csv'
+INPUT_CSV = os.getenv('input_csv')
+print('user choose input csv',INPUT_CSV)
+if not INPUT_CSV  or INPUT_CSV=='':
+    INPUT_CSV='domains.csv'
 DOMAIN_COL = os.getenv('domain_col') or 'domain'
 logging.info(f'INPUT_CSV: {INPUT_CSV}, DOMAIN_COL: {DOMAIN_COL}')
 

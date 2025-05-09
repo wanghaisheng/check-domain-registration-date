@@ -1,3 +1,5 @@
+一个实用小工具
+
 # batch  check domain born date
 
 

@@ -117,7 +117,7 @@ def validate_proxy(proxy, test_url='https://www.google.com', timeout=8):
         importlib.reload(socket)
     return False
 
-def get_valid_proxies_from_urls(urls, max_count=100):
+def get_valid_proxies_from_urls_old(urls, max_count=100):
     """
     Fetch proxies from URLs, validate by Google access, and return up to max_count valid proxies.
     """
@@ -129,6 +129,28 @@ def get_valid_proxies_from_urls(urls, max_count=100):
             if len(valid) >= max_count:
                 break
     return valid
+def get_valid_proxies_from_urls(urls, max_count=100):
+    """
+    Fetch proxies from URLs, validate using Google access concurrently, and return up to max_count valid proxies.
+    """
+    proxies = fetch_proxies_from_urls(urls)
+    valid_proxies = []
+
+    def validate_and_collect(proxy):
+        if validate_proxy(proxy):
+            return proxy
+        return None
+
+    with ThreadPoolExecutor(max_workers=100) as executor:
+        results = executor.map(validate_and_collect, proxies)
+
+    for proxy in results:
+        if proxy:
+            valid_proxies.append(proxy)
+            if len(valid_proxies) >= max_count:
+                break
+
+    return valid_proxies
 
 def get_shared_valid_proxies(max_count=100, force_refresh=False):
     """
